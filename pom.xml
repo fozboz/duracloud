@@ -70,6 +70,7 @@
     <module>storageproviderdata</module>
     <module>s3storageprovider</module>
     <module>glacierstorageprovider</module>
+    <module>swiftstorageprovider</module>
     <module>irodsstorageprovider</module>
     <module>snapshotdata</module>
     <module>snapshotstorageprovider</module>
@@ -234,7 +235,8 @@
     <instrumentedTests>**/*Test*__*.class</instrumentedTests>
     <innerClasses>**/*$*</innerClasses>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <duracloud.db.version>6.0.0</duracloud.db.version>
+    <duracloud.db.version>6.1.0-SNAPSHOT</duracloud.db.version>
+    <duraspace-codestyle.version>1.1.0-SNAPSHOT</duraspace-codestyle.version>
     <org.springframework.version>4.2.5.RELEASE</org.springframework.version>
     <org.springframework.security.version>4.0.4.RELEASE</org.springframework.security.version>
     <org.springframework.webflow.version>2.4.2.RELEASE</org.springframework.webflow.version>
@@ -523,20 +525,16 @@
         <executions>
           <execution>
             <id>verify-style</id>
-            <!-- Bind to process-classes so it runs after compile, but before package -->
-            <phase>process-classes</phase>
+            <!-- Bind to verify so it runs after package & unit tests, but before install -->
+            <phase>verify</phase>
             <goals>
               <goal>check</goal>
             </goals>
           </execution>
         </executions>
         <configuration>
-          <configLocation>
-            https://raw.githubusercontent.com/duraspace/codestyle/master/duraspace-checkstyle.xml
-          </configLocation>
-          <suppressionsLocation>
-            https://raw.githubusercontent.com/duraspace/codestyle/master/duraspace-checkstyle-suppressions.xml
-          </suppressionsLocation>
+          <configLocation>duraspace-checkstyle/checkstyle.xml</configLocation>
+          <suppressionsLocation>duraspace-checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
           <encoding>UTF-8</encoding>
           <consoleOutput>true</consoleOutput>
           <logViolationsToConsole>true</logViolationsToConsole>
@@ -544,11 +542,16 @@
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
         </configuration>
         <dependencies>
+          <dependency>
+            <groupId>org.duraspace</groupId>
+            <artifactId>codestyle</artifactId>
+            <version>${duraspace-codestyle.version}</version>
+          </dependency>
           <!-- Override dependencies to use latest version of checkstyle -->
           <dependency>
             <groupId>com.puppycrawl.tools</groupId>
             <artifactId>checkstyle</artifactId>
-            <version>8.8</version>
+            <version>8.18</version>
           </dependency>
         </dependencies>
       </plugin>
