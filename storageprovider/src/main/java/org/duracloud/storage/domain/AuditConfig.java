@@ -15,21 +15,90 @@ public class AuditConfig {
 
     private String auditQueueName;
     private String auditLogSpaceId;
+    private String auditQueueType;
+    private String rabbitmqHost;
+    private Integer rabbitmqPort;
+    private String rabbitmqVhost;
+    private String rabbitmqExchange;
+    private String rabbitmqUsername;
+    private String rabbitmqPassword;
 
     public String getAuditQueueName() {
+
         return auditQueueName;
     }
 
     public void setAuditQueueName(String auditQueueName) {
+
         this.auditQueueName = auditQueueName;
     }
 
     public String getAuditLogSpaceId() {
+
         return auditLogSpaceId;
     }
 
     public void setAuditLogSpaceId(String auditLogSpaceId) {
+
         this.auditLogSpaceId = auditLogSpaceId;
+    }
+
+    public String getAuditQueueType() {
+
+        return auditQueueType;
+    }
+
+    public void setAuditQueueType(String auditQueueType) {
+
+        this.auditQueueType = auditQueueType;
+    }
+
+    public String getRabbitmqHost() {
+        return rabbitmqHost;
+    }
+
+    public void setRabbitmqHost(String rabbitmqHost) {
+        this.rabbitmqHost = rabbitmqHost;
+    }
+
+    public Integer getRabbitmqPort() {
+        return rabbitmqPort;
+    }
+
+    public void setRabbitmqPort(Integer rabbitmqPort) {
+        this.rabbitmqPort = rabbitmqPort;
+    }
+
+    public String getRabbitmqVhost() {
+        return rabbitmqVhost;
+    }
+
+    public void setRabbitmqVhost(String rabbitmqVhost) {
+        this.rabbitmqVhost = rabbitmqVhost;
+    }
+
+    public String getRabbitmqExchange() {
+        return rabbitmqExchange;
+    }
+
+    public void setRabbitmqExchange(String rabbitmqExchange) {
+        this.rabbitmqExchange = rabbitmqExchange;
+    }
+
+    public String getRabbitmqUsername() {
+        return rabbitmqUsername;
+    }
+
+    public void setRabbitmqUsername(String rabbitmqUsername) {
+        this.rabbitmqUsername = rabbitmqUsername;
+    }
+
+    public String getRabbitmqPassword() {
+        return rabbitmqPassword;
+    }
+
+    public void setRabbitmqPassword(String rabbitmqPassword) {
+        this.rabbitmqPassword = rabbitmqPassword;
     }
 
 }
