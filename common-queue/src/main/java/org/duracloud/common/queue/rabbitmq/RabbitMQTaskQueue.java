@@ -10,6 +10,7 @@ package org.duracloud.common.queue.rabbitmq;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -17,10 +18,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.SynchronousQueue;
 
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
@@ -51,10 +54,11 @@ public class RabbitMQTaskQueue implements TaskQueue {
     private Channel mqChannel;
     private String queueName;
     private Integer visibilityTimeout;  // in seconds
-
+    private Integer unAcknowlededMesageCount = 0;
+    private String queueUrl;
 
     public enum MsgProp {
-        MSG_ID, RECEIPT_HANDLE;
+        DELIVERY_TAG, ROUTING_KEY, EXCHANGE
     }
 
     /**
@@ -77,8 +81,9 @@ public class RabbitMQTaskQueue implements TaskQueue {
             factory.setHost("localhost");
             factory.setPort(5627);
             Connection conn = factory.newConnection();
-            this.mqChannel = conn.createChannel();
-            this.mqChannel.queueBind(queueName, "", queueName);
+            mqChannel = conn.createChannel();
+            mqChannel.queueBind(queueName, "", queueName);
+            queueUrl = "RabbitMQ-" + conn.getAddress();
             this.queueName = queueName;
         } catch (Exception ex) {
             log.error("failed to estabilish connection to RabbitMQ ", queueName, ex.getMessage());
@@ -86,12 +91,13 @@ public class RabbitMQTaskQueue implements TaskQueue {
         }
     }
 
-    public RabbitMQTaskQueue(Channel rabbitMQChannel, String queueName) {
+    public RabbitMQTaskQueue(Connection conn, String queueName) {
         try {
-            this.mqChannel = rabbitMQChannel;
-            this.mqChannel.queueBind(queueName, "", queueName);
+            mqChannel = conn.createChannel();
+            mqChannel.queueBind(queueName, "", queueName);
+            queueUrl = "RabbitMQ-" + conn.getAddress();
             this.queueName = queueName;
-        }catch (Exception ex) {
+        } catch (Exception ex) {
             log.error("failed to estabilish connection to RabbitMQ ", queueName, ex.getMessage());
             throw new DuraCloudRuntimeException(ex);
         }
@@ -103,11 +109,12 @@ public class RabbitMQTaskQueue implements TaskQueue {
     }
 
 
-    protected Task marshallTask(Message msg) {
+    protected Task marshallTask(byte[] msgBody, long deliveryTag, String routingKey, String exhcange) {
         Properties props = new Properties();
         Task task = null;
+        String msg = Arrays.toString(msgBody);
         try {
-            props.load(new StringReader(msg.getBody()));
+            props.load(new StringReader(msg));
 
             if (props.containsKey(Task.KEY_TYPE)) {
                 task = new Task();
@@ -118,8 +125,9 @@ public class RabbitMQTaskQueue implements TaskQueue {
                         task.addProperty(key, props.getProperty(key));
                     }
                 }
-                task.addProperty(MsgProp.MSG_ID.name(), msg.getMessageId());
-                task.addProperty(MsgProp.RECEIPT_HANDLE.name(), msg.getReceiptHandle());
+                task.addProperty(MsgProp.DELIVERY_TAG.name(), String.valueOf(deliveryTag));
+                task.addProperty(MsgProp.ROUTING_KEY.name(), routingKey);
+                task.addProperty(MsgProp.EXCHANGE.name(), exhcange);
             } else {
                 log.error("RabbitMQ message from queue: " + queueName + ", does not contain a 'task type'");
             }
@@ -164,7 +172,7 @@ public class RabbitMQTaskQueue implements TaskQueue {
                     return null;
                 }
             });
-
+            unAcknowlededMesageCount++;
             log.info("SQS message successfully placed {} on queue - queue: {}",
                      task, queueName);
 
@@ -227,7 +235,6 @@ public class RabbitMQTaskQueue implements TaskQueue {
                               " attribute to Long, messageId: " +
                               msg.getMessageId(), nfe);
                 }
-
                 Task task = marshallTask(msg);
                 task.setVisibilityTimeout(visibilityTimeout);
                 tasks.add(task);
@@ -242,7 +249,41 @@ public class RabbitMQTaskQueue implements TaskQueue {
 
     @Override
     public Task take() throws TimeoutException {
-        return take(1).iterator().next();
+        try {
+            boolean autoAck = false;
+            final SynchronousQueue<Task> queue = new SynchronousQueue<>();
+            mqChannel.basicConsume(queueName, autoAck, this.queueName + "-consumer", new DefaultConsumer(mqChannel) {
+                @Override
+                public void handleDelivery(String consumerTag,
+                                           Envelope envelope,
+                                           AMQP.BasicProperties properties,
+                                           byte[] body) throws IOException {
+                    try {
+                        String routingKey = envelope.getRoutingKey();
+                        String exchange = envelope.getExchange();
+                        long deliveryTag = envelope.getDeliveryTag();
+                        Long sentTime = properties.getTimestamp().getTime();
+                        Long preworkQueueTime = System.currentTimeMillis() - sentTime;
+                        log.info("SQS message received - queue: {}, queueUrl: {}, deliveryTag: {}," +
+                                 " preworkQueueTime: {}, receiveCount: {}"
+                            , queueName, queueUrl, deliveryTag
+                            , DurationFormatUtils.formatDuration(preworkQueueTime, "HH:mm:ss,SSS"));
+                        Task task = marshallTask(body, deliveryTag, routingKey, exchange);
+                        queue.put(task);
+                    } catch (Exception ex){
+                        log.error("failed to take task from {} due to {}", queueName, ex.getMessage());
+                        throw new IOException("Error taking task from queue: " +
+                                                   queueName);
+                    }
+                    //mqChannel.basicAck(deliveryTag, false);
+                }
+            });
+            return queue.take();
+        } catch (Exception ex) {
+            log.error("failed to take task from {} due to {}", queueName, ex.getMessage());
+            throw new TimeoutException("No tasks available from queue: " +
+                                       queueName);
+        }
     }
 
     @Override
@@ -252,15 +293,13 @@ public class RabbitMQTaskQueue implements TaskQueue {
     @Override
     public void deleteTask(Task task) throws TaskNotFoundException {
         try {
-            sqsClient.deleteMessage(new DeleteMessageRequest()
-                                        .withQueueUrl(queueUrl)
-                                        .withReceiptHandle(
-                                            task.getProperty(MsgProp.RECEIPT_HANDLE.name())));
+            mqChannel.basicAck(Long.parseLong(task.getProperty(MsgProp.DELIVERY_TAG.name())), false);
             log.info("successfully deleted {}", task);
+            unAcknowlededMesageCount--;
 
-        } catch (ReceiptHandleIsInvalidException rhe) {
-            log.error("failed to delete task " + task + ": " + rhe.getMessage(), rhe);
-            throw new TaskNotFoundException(rhe);
+        } catch (Exception e) {
+            log.error("failed to delete task " + task + ": " + e.getMessage(), e);
+            throw new TaskNotFoundException(e);
         }
     }
 
@@ -271,36 +310,14 @@ public class RabbitMQTaskQueue implements TaskQueue {
         }
 
         try {
-
-            List<DeleteMessageBatchRequestEntry> entries = new ArrayList<>(tasks.size());
-
             for (Task task : tasks) {
-                DeleteMessageBatchRequestEntry entry =
-                    new DeleteMessageBatchRequestEntry().withId(task.getProperty(MsgProp.MSG_ID.name()))
-                                                        .withReceiptHandle(
-                                                            task.getProperty(MsgProp.RECEIPT_HANDLE.name()));
-                entries.add(entry);
+                deleteTask(task);
             }
 
-            DeleteMessageBatchRequest request = new DeleteMessageBatchRequest()
-                .withQueueUrl(queueUrl)
-                .withEntries(entries);
-            DeleteMessageBatchResult result = sqsClient.deleteMessageBatch(request);
-            List<BatchResultErrorEntry> failed = result.getFailed();
-            if (failed != null && failed.size() > 0) {
-                for (BatchResultErrorEntry error : failed) {
-                    log.info("failed to delete message: " + error);
-                }
-            }
+        } catch (Exception e) {
+            log.error("failed to batch delete tasks " + tasks + ": " + e.getMessage(), e);
 
-            for (DeleteMessageBatchResultEntry entry : result.getSuccessful()) {
-                log.info("successfully deleted {}", entry);
-            }
-
-        } catch (AmazonServiceException se) {
-            log.error("failed to batch delete tasks " + tasks + ": " + se.getMessage(), se);
-
-            throw new TaskException(se);
+            throw new TaskException(e);
         }
 
     }
@@ -313,58 +330,38 @@ public class RabbitMQTaskQueue implements TaskQueue {
         int attempts = task.getAttempts();
         task.incrementAttempts();
         try {
-            deleteTask(task);
-        } catch (TaskNotFoundException e) {
-            log.error("unable to delete " + task + " ignoring - requeuing anyway");
+            mqChannel.basicReject(Long.parseLong(task.getProperty(MsgProp.DELIVERY_TAG.name())), true);
+            unAcknowlededMesageCount--;
+        } catch (Exception e) {
+            log.error("unable to requeue " + task);
         }
 
-        put(task);
         log.warn("requeued {} after {} failed attempts.", task, attempts);
 
     }
 
     @Override
     public Integer size() {
-        GetQueueAttributesResult result = queryQueueAttributes(QueueAttributeName.ApproximateNumberOfMessages);
-        String sizeStr = result.getAttributes().get(QueueAttributeName.ApproximateNumberOfMessages.name());
-        Integer size = Integer.parseInt(sizeStr);
-        return size;
+        try {
+            Long sizeLong =  mqChannel.messageCount(queueName);
+            return sizeLong.intValue();
+        }catch (Exception e) {
+            return 0;
+        }
     }
 
     @Override
     public Integer sizeIncludingInvisibleAndDelayed() {
-        GetQueueAttributesResult result =
-            queryQueueAttributes(QueueAttributeName.ApproximateNumberOfMessages,
-                                 QueueAttributeName.ApproximateNumberOfMessagesNotVisible,
-                                 QueueAttributeName.ApproximateNumberOfMessagesDelayed);
-        Map<String, String> attributes = result.getAttributes();
-        int size = 0;
-        for (String attrKey : attributes.keySet()) {
-            String value = attributes.get(attrKey);
-            log.debug("retrieved attribute: {}={}", attrKey, value);
-            int intValue = Integer.parseInt(value);
-            size += intValue;
-        }
-        log.debug("calculated size: {}", size);
-        return size;
+        return size() + unAcknowlededMesageCount;
     }
 
     private Integer getVisibilityTimeout() {
-        GetQueueAttributesResult result = queryQueueAttributes(QueueAttributeName.VisibilityTimeout);
-        String visStr = result.getAttributes().get(QueueAttributeName.VisibilityTimeout.name());
-        Integer visibilityTimeout = Integer.parseInt(visStr);
         return visibilityTimeout;
     }
 
     private String getQueueUrl() {
-        return sqsClient.getQueueUrl(
-            new GetQueueUrlRequest().withQueueName(queueName)).getQueueUrl();
+        return queueUrl;
     }
 
-    private GetQueueAttributesResult queryQueueAttributes(QueueAttributeName... attrNames) {
-        return sqsClient.getQueueAttributes(new GetQueueAttributesRequest()
-                                                .withQueueUrl(queueUrl)
-                                                .withAttributeNames(attrNames));
-    }
 
 }
