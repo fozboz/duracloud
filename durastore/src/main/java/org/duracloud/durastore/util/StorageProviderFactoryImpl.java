@@ -16,6 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.duracloud.audit.provider.AuditStorageProvider;
 import org.duracloud.common.queue.TaskQueue;
 import org.duracloud.common.queue.aws.SQSTaskQueue;
+import org.duracloud.common.queue.rabbitmq.RabbitMQTaskQueue;
 import org.duracloud.common.queue.noop.NoopTaskQueue;
 import org.duracloud.common.rest.DuraCloudRequestContextUtil;
 import org.duracloud.common.sns.AccountChangeNotifier;
@@ -131,12 +132,17 @@ public class StorageProviderFactoryImpl extends ProviderFactoryBase
             // If no audit config defined, turn off auditing
             this.auditQueue = new NoopTaskQueue();
         } else {
+            String queueType = auditConfig.getAuditQueueType();
             String queueName = auditConfig.getAuditQueueName();
             if (null == queueName) {
                 // If no queue name is defined, turn off auditing
                 this.auditQueue = new NoopTaskQueue();
             } else {
-                this.auditQueue = new SQSTaskQueue(queueName);
+                if(queueName == "AWS") {
+                    this.auditQueue = new SQSTaskQueue(queueName);
+                }else{
+                    this.auditQueue = new RabbitMQTaskQueue("duracloud", queueName);
+                }
             }
         }
     }

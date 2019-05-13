@@ -18,14 +18,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.SynchronousQueue;
 
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.AMQP;
-import com.rabbitmq.client.Consumer;
-import com.rabbitmq.client.DefaultConsumer;
+import com.rabbitmq.client.GetResponse;
 import com.rabbitmq.client.Envelope;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.duracloud.common.error.DuraCloudRuntimeException;
@@ -56,6 +54,7 @@ public class RabbitMQTaskQueue implements TaskQueue {
     private Integer visibilityTimeout;  // in seconds
     private Integer unAcknowlededMesageCount = 0;
     private String queueUrl;
+    private String exchangeName;
 
     public enum MsgProp {
         DELIVERY_TAG, ROUTING_KEY, EXCHANGE
@@ -72,21 +71,22 @@ public class RabbitMQTaskQueue implements TaskQueue {
      * environment variable or one of the other methods described here:
      * http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/java-dg-region-selection.html
      */
-    public RabbitMQTaskQueue(String queueName) {
+    public RabbitMQTaskQueue(String exchangeName, String queueName) {
         try {
+            this.exchangeName = exchangeName;
             ConnectionFactory factory = new ConnectionFactory();
             factory.setUsername("guest");
             factory.setPassword("guest");
             factory.setVirtualHost("/");
             factory.setHost("localhost");
-            factory.setPort(5627);
+            factory.setPort(5672);
             Connection conn = factory.newConnection();
             mqChannel = conn.createChannel();
-            mqChannel.queueBind(queueName, "", queueName);
+            mqChannel.queueBind(queueName, exchangeName, queueName);
             queueUrl = "RabbitMQ-" + conn.getAddress();
             this.queueName = queueName;
         } catch (Exception ex) {
-            log.error("failed to estabilish connection to RabbitMQ ", queueName, ex.getMessage());
+            log.error("failed to estabilish connection to RabbitMQ with queue name {} and URL {} because {}", queueName, queueUrl, ex.getMessage());
             throw new DuraCloudRuntimeException(ex);
         }
     }
@@ -94,11 +94,11 @@ public class RabbitMQTaskQueue implements TaskQueue {
     public RabbitMQTaskQueue(Connection conn, String queueName) {
         try {
             mqChannel = conn.createChannel();
-            mqChannel.queueBind(queueName, "", queueName);
+            mqChannel.queueBind(queueName, exchangeName, queueName);
             queueUrl = "RabbitMQ-" + conn.getAddress();
             this.queueName = queueName;
         } catch (Exception ex) {
-            log.error("failed to estabilish connection to RabbitMQ ", queueName, ex.getMessage());
+            log.error("failed to estabilish connection to RabbitMQ with queue name {} and URL {} because {}", queueName, queueUrl, ex.getMessage());
             throw new DuraCloudRuntimeException(ex);
         }
     }
@@ -129,7 +129,7 @@ public class RabbitMQTaskQueue implements TaskQueue {
                 task.addProperty(MsgProp.ROUTING_KEY.name(), routingKey);
                 task.addProperty(MsgProp.EXCHANGE.name(), exhcange);
             } else {
-                log.error("RabbitMQ message from queue: " + queueName + ", does not contain a 'task type'");
+                log.error("RabbitMQ message from queue: " + queueName + " at " + queueUrl +  ", does not contain a 'task type'");
             }
         } catch (IOException ioe) {
             log.error("Error creating Task", ioe);
@@ -168,16 +168,16 @@ public class RabbitMQTaskQueue implements TaskQueue {
             new Retrier(4, 10000, 2).execute(new Retriable() {
                 @Override
                 public Object retry() throws Exception {
-                    mqChannel.basicPublish("", queueName, null, messageBodyBytes);
+                    mqChannel.basicPublish(exchangeName, queueName, null, messageBodyBytes);
                     return null;
                 }
             });
             unAcknowlededMesageCount++;
-            log.info("SQS message successfully placed {} on queue - queue: {}",
+            log.info("RabbitMQ message successfully placed {} on queue - queue: {}",
                      task, queueName);
 
         } catch (Exception ex) {
-            log.error("failed to place {} on {} due to {}", task, queueName, ex.getMessage());
+            log.error("failed to place {} on {} at {} due to {}", task, queueName, queueUrl, ex.getMessage());
             throw new DuraCloudRuntimeException(ex);
         }
     }
@@ -210,37 +210,25 @@ public class RabbitMQTaskQueue implements TaskQueue {
 
     @Override
     public Set<Task> take(int maxTasks) throws TimeoutException {
-        ReceiveMessageResult result = sqsClient.receiveMessage(
-            new ReceiveMessageRequest()
-                .withQueueUrl(queueUrl)
-                .withMaxNumberOfMessages(maxTasks)
-                .withAttributeNames("SentTimestamp", "ApproximateReceiveCount"));
-        if (result.getMessages() != null && result.getMessages().size() > 0) {
-            Set<Task> tasks = new HashSet<>();
-            for (Message msg : result.getMessages()) {
-
-                // The Amazon docs claim this attribute is 'returned as an integer
-                // representing the epoch time in milliseconds.'
-                // http://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/Query_QueryReceiveMessage.html
-                try {
-                    Long sentTime = Long.parseLong(msg.getAttributes().get("SentTimestamp"));
-                    Long preworkQueueTime = System.currentTimeMillis() - sentTime;
-                    log.info("SQS message received - queue: {}, queueUrl: {}, msgId: {}," +
-                             " preworkQueueTime: {}, receiveCount: {}"
-                        , queueName, queueUrl, msg.getMessageId()
-                        , DurationFormatUtils.formatDuration(preworkQueueTime, "HH:mm:ss,SSS")
-                        , msg.getAttributes().get("ApproximateReceiveCount"));
-                } catch (NumberFormatException nfe) {
-                    log.error("Error converting 'SentTimestamp' SQS message" +
-                              " attribute to Long, messageId: " +
-                              msg.getMessageId(), nfe);
-                }
-                Task task = marshallTask(msg);
-                task.setVisibilityTimeout(visibilityTimeout);
-                tasks.add(task);
+        Integer size = size();
+        if (size > 0) {
+            if(size < maxTasks){
+                size = maxTasks;
             }
-
-            return tasks;
+            Set<Task> tasks = new HashSet<>();
+            try {
+                for (int i = 0; i < size; i++) {
+                    Task task = take();
+                    tasks.add(task);
+                }
+                return tasks;
+            } catch (Exception e){
+                for (Task task : tasks) {
+                    requeue(task);
+                }
+                throw new TimeoutException("Failed to get at least one message from queue: " +
+                                           queueName + ", queueUrl: " + queueUrl);
+            }
         } else {
             throw new TimeoutException("No tasks available from queue: " +
                                        queueName + ", queueUrl: " + queueUrl);
@@ -251,34 +239,25 @@ public class RabbitMQTaskQueue implements TaskQueue {
     public Task take() throws TimeoutException {
         try {
             boolean autoAck = false;
-            final SynchronousQueue<Task> queue = new SynchronousQueue<>();
-            mqChannel.basicConsume(queueName, autoAck, this.queueName + "-consumer", new DefaultConsumer(mqChannel) {
-                @Override
-                public void handleDelivery(String consumerTag,
-                                           Envelope envelope,
-                                           AMQP.BasicProperties properties,
-                                           byte[] body) throws IOException {
-                    try {
-                        String routingKey = envelope.getRoutingKey();
-                        String exchange = envelope.getExchange();
-                        long deliveryTag = envelope.getDeliveryTag();
-                        Long sentTime = properties.getTimestamp().getTime();
-                        Long preworkQueueTime = System.currentTimeMillis() - sentTime;
-                        log.info("SQS message received - queue: {}, queueUrl: {}, deliveryTag: {}," +
-                                 " preworkQueueTime: {}, receiveCount: {}"
-                            , queueName, queueUrl, deliveryTag
-                            , DurationFormatUtils.formatDuration(preworkQueueTime, "HH:mm:ss,SSS"));
-                        Task task = marshallTask(body, deliveryTag, routingKey, exchange);
-                        queue.put(task);
-                    } catch (Exception ex){
-                        log.error("failed to take task from {} due to {}", queueName, ex.getMessage());
-                        throw new IOException("Error taking task from queue: " +
-                                                   queueName);
-                    }
-                    //mqChannel.basicAck(deliveryTag, false);
-                }
-            });
-            return queue.take();
+            GetResponse response = mqChannel.basicGet(queueName, autoAck);
+            if (response == null) {
+                throw new TimeoutException("No tasks available from queue: " +
+                                           queueName + ", queueUrl: " + queueUrl);
+            } else {
+                AMQP.BasicProperties properties = response.getProps();
+                Envelope envelope = response.getEnvelope();
+                byte[] body = response.getBody();
+                String routingKey = envelope.getRoutingKey();
+                String exchange = envelope.getExchange();
+                long deliveryTag = envelope.getDeliveryTag();
+                Long sentTime = properties.getTimestamp().getTime();
+                Long preworkQueueTime = System.currentTimeMillis() - sentTime;
+                log.info("RabbitMQ message received - queue: {}, queueUrl: {}, deliveryTag: {}, preworkQueueTime: {}"
+                    , queueName, queueUrl, deliveryTag
+                    , DurationFormatUtils.formatDuration(preworkQueueTime, "HH:mm:ss,SSS"));
+                Task task = marshallTask(body, deliveryTag, routingKey, exchange);
+                return task;
+            }
         } catch (Exception ex) {
             log.error("failed to take task from {} due to {}", queueName, ex.getMessage());
             throw new TimeoutException("No tasks available from queue: " +
@@ -333,7 +312,8 @@ public class RabbitMQTaskQueue implements TaskQueue {
             mqChannel.basicReject(Long.parseLong(task.getProperty(MsgProp.DELIVERY_TAG.name())), true);
             unAcknowlededMesageCount--;
         } catch (Exception e) {
-            log.error("unable to requeue " + task);
+            log.error("unable to reject message {}, re-put message instead ", task);
+            put(task);
         }
 
         log.warn("requeued {} after {} failed attempts.", task, attempts);

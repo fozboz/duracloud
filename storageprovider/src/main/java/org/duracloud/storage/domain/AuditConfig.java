@@ -15,6 +15,8 @@ public class AuditConfig {
 
     private String auditQueueName;
     private String auditLogSpaceId;
+    private String auditQueueType;
+    private String auditQueueHost;
 
     public String getAuditQueueName() {
         return auditQueueName;
@@ -30,6 +32,22 @@ public class AuditConfig {
 
     public void setAuditLogSpaceId(String auditLogSpaceId) {
         this.auditLogSpaceId = auditLogSpaceId;
+    }
+
+    public String getAuditQueueType() {
+        return auditQueueType;
+    }
+
+    public void setAuditQueueType(String auditQueueType) {
+        this.auditQueueType = auditQueueType;
+    }
+
+    public String getAuditQueueHost() {
+        return auditQueueHost;
+    }
+
+    public void setAuditQueueHost(String auditQueueHost) {
+        this.auditQueueHost = auditQueueHost;
     }
 
 }
