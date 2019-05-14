@@ -71,14 +71,14 @@ public class RabbitMQTaskQueue implements TaskQueue {
      * environment variable or one of the other methods described here:
      * http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/java-dg-region-selection.html
      */
-    public RabbitMQTaskQueue(String exchangeName, String queueName) {
+    public RabbitMQTaskQueue(String host, String exchange, String username, String password,  String queueName) {
         try {
-            this.exchangeName = exchangeName;
+            this.exchangeName = exchange;
             ConnectionFactory factory = new ConnectionFactory();
-            factory.setUsername("guest");
-            factory.setPassword("guest");
+            factory.setUsername(username);
+            factory.setPassword(password);
             factory.setVirtualHost("/");
-            factory.setHost("localhost");
+            factory.setHost(host);
             factory.setPort(5672);
             Connection conn = factory.newConnection();
             mqChannel = conn.createChannel();
