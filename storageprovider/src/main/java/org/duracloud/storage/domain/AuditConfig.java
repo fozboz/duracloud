@@ -16,7 +16,10 @@ public class AuditConfig {
     private String auditQueueName;
     private String auditLogSpaceId;
     private String auditQueueType;
-    private String auditQueueHost;
+    private String rabbitmqHost;
+    private String rabbitmqExchange;
+    private String rabbitmqUsername;
+    private String rabbitmqPassword;
 
     public String getAuditQueueName() {
         return auditQueueName;
@@ -42,12 +45,20 @@ public class AuditConfig {
         this.auditQueueType = auditQueueType;
     }
 
-    public String getAuditQueueHost() {
-        return auditQueueHost;
-    }
+    public String getRabbitmqHost() { return rabbitmqHost; }
 
-    public void setAuditQueueHost(String auditQueueHost) {
-        this.auditQueueHost = auditQueueHost;
-    }
+    public void setRabbitmqHost(String rabbitmqHost) { this.rabbitmqHost = rabbitmqHost; }
+
+    public String getRabbitmqExchange() { return rabbitmqExchange; }
+
+    public void setRabbitmqExchange(String rabbitmqExchange) { this.rabbitmqExchange = rabbitmqExchange; }
+
+    public String getRabbitmqUsername() { return rabbitmqUsername; }
+
+    public void setRabbitmqUsername(String rabbitmqUsername) { this.rabbitmqUsername = rabbitmqUsername; }
+
+    public String getRabbitmqPassword() { return rabbitmqPassword; }
+
+    public void setRabbitmqPassword(String rabbitmqPassword) { this.rabbitmqPassword = rabbitmqPassword; }
 
 }

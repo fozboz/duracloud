@@ -133,16 +133,20 @@ public class StorageProviderFactoryImpl extends ProviderFactoryBase
             // If no audit config defined, turn off auditing
             this.auditQueue = new NoopTaskQueue();
         } else {
-            String queueType = auditConfig.getAuditQueueType();
             String queueName = auditConfig.getAuditQueueName();
             if (null == queueName) {
                 // If no queue name is defined, turn off auditing
                 this.auditQueue = new NoopTaskQueue();
             } else {
-                if(queueName == "AWS") {
+                String queueType = auditConfig.getAuditQueueType();
+                if(queueType == "AWS") {
                     this.auditQueue = new SQSTaskQueue(queueName);
                 }else{
-                    this.auditQueue = new RabbitMQTaskQueue("duracloud", queueName);
+                    String host = auditConfig.getRabbitmqHost();
+                    String exchange = auditConfig.getRabbitmqExchange();
+                    String username = auditConfig.getRabbitmqUsername();
+                    String password = auditConfig.getRabbitmqPassword();
+                    this.auditQueue = new RabbitMQTaskQueue(host, exchange, username, password, queueName);
                 }
             }
         }
