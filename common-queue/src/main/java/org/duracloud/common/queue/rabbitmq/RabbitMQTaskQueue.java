@@ -51,7 +51,7 @@ public class RabbitMQTaskQueue implements TaskQueue {
 
     private Channel mqChannel;
     private String queueName;
-    private Integer visibilityTimeout;  // in seconds
+    private Integer visibilityTimeout = 100000;  // No such thing in RabbitmQ
     private Integer unAcknowlededMesageCount = 0;
     private String queueUrl;
     private String exchangeName;
@@ -91,10 +91,11 @@ public class RabbitMQTaskQueue implements TaskQueue {
         }
     }
 
-    public RabbitMQTaskQueue(Connection conn, String queueName) {
+    public RabbitMQTaskQueue(Connection conn, String exchange, String queueName) {
         try {
+            this.exchangeName = exchange;
             mqChannel = conn.createChannel();
-            mqChannel.queueBind(queueName, exchangeName, queueName);
+            mqChannel.queueBind(queueName, exchange, queueName);
             queueUrl = "RabbitMQ-" + conn.getAddress();
             this.queueName = queueName;
         } catch (Exception ex) {
@@ -112,7 +113,7 @@ public class RabbitMQTaskQueue implements TaskQueue {
     protected Task marshallTask(byte[] msgBody, long deliveryTag, String routingKey, String exhcange) {
         Properties props = new Properties();
         Task task = null;
-        String msg = Arrays.toString(msgBody);
+        String msg = new String(msgBody);
         try {
             props.load(new StringReader(msg));
 
@@ -249,13 +250,19 @@ public class RabbitMQTaskQueue implements TaskQueue {
                 byte[] body = response.getBody();
                 String routingKey = envelope.getRoutingKey();
                 String exchange = envelope.getExchange();
+                System.out.println(response);
                 long deliveryTag = envelope.getDeliveryTag();
-                Long sentTime = properties.getTimestamp().getTime();
-                Long preworkQueueTime = System.currentTimeMillis() - sentTime;
+                System.out.println("Before");
+                //Long sentTime = properties.getTimestamp().getTime();
+                //Long preworkQueueTime = System.currentTimeMillis() - sentTime;
+                Long preworkQueueTime = System.currentTimeMillis() ;
+                System.out.println("Mid");
                 log.info("RabbitMQ message received - queue: {}, queueUrl: {}, deliveryTag: {}, preworkQueueTime: {}"
                     , queueName, queueUrl, deliveryTag
                     , DurationFormatUtils.formatDuration(preworkQueueTime, "HH:mm:ss,SSS"));
+                System.out.println("After");
                 Task task = marshallTask(body, deliveryTag, routingKey, exchange);
+                task.setVisibilityTimeout(visibilityTimeout);
                 return task;
             }
         } catch (Exception ex) {
