@@ -238,37 +238,38 @@ public class RabbitMQTaskQueue implements TaskQueue {
 
     @Override
     public Task take() throws TimeoutException {
-        try {
-            boolean autoAck = false;
-            GetResponse response = mqChannel.basicGet(queueName, autoAck);
-            if (response == null) {
+        Integer size = size();
+        if(size > 0) {
+            try {
+                GetResponse response = mqChannel.basicGet(queueName, false);
+                if (response == null) {
+                    throw new TimeoutException("No tasks available from queue: " +
+                                               queueName + ", queueUrl: " + queueUrl);
+                } else {
+                    AMQP.BasicProperties properties = response.getProps();
+                    Envelope envelope = response.getEnvelope();
+                    byte[] body = response.getBody();
+                    String routingKey = envelope.getRoutingKey();
+                    String exchange = envelope.getExchange();
+                    long deliveryTag = envelope.getDeliveryTag();
+                    Long sentTime = properties.getTimestamp().getTime();
+                    Long preworkQueueTime = System.currentTimeMillis() - sentTime;
+                    log.info(
+                        "RabbitMQ message received - queue: {}, queueUrl: {}, deliveryTag: {}, preworkQueueTime: {}"
+                        , queueName, queueUrl, deliveryTag
+                        , DurationFormatUtils.formatDuration(preworkQueueTime, "HH:mm:ss,SSS"));
+                    Task task = marshallTask(body, deliveryTag, routingKey, exchange);
+                    task.setVisibilityTimeout(visibilityTimeout);
+                    return task;
+                }
+            } catch (Exception ex) {
+                log.error("failed to take task from {} due to {}", queueName, ex.getMessage());
                 throw new TimeoutException("No tasks available from queue: " +
                                            queueName + ", queueUrl: " + queueUrl);
-            } else {
-                AMQP.BasicProperties properties = response.getProps();
-                Envelope envelope = response.getEnvelope();
-                byte[] body = response.getBody();
-                String routingKey = envelope.getRoutingKey();
-                String exchange = envelope.getExchange();
-                System.out.println(response);
-                long deliveryTag = envelope.getDeliveryTag();
-                System.out.println("Before");
-                //Long sentTime = properties.getTimestamp().getTime();
-                //Long preworkQueueTime = System.currentTimeMillis() - sentTime;
-                Long preworkQueueTime = System.currentTimeMillis() ;
-                System.out.println("Mid");
-                log.info("RabbitMQ message received - queue: {}, queueUrl: {}, deliveryTag: {}, preworkQueueTime: {}"
-                    , queueName, queueUrl, deliveryTag
-                    , DurationFormatUtils.formatDuration(preworkQueueTime, "HH:mm:ss,SSS"));
-                System.out.println("After");
-                Task task = marshallTask(body, deliveryTag, routingKey, exchange);
-                task.setVisibilityTimeout(visibilityTimeout);
-                return task;
             }
-        } catch (Exception ex) {
-            log.error("failed to take task from {} due to {}", queueName, ex.getMessage());
+        }else{
             throw new TimeoutException("No tasks available from queue: " +
-                                       queueName);
+                                       queueName + ", queueUrl: " + queueUrl);
         }
     }
 
