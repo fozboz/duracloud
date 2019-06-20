@@ -37,8 +37,8 @@ import org.springframework.context.annotation.Configuration;
  * @author Daniel Bernstein
  */
 @Configuration
-public class SnsSubscriptionManagerConfig {
-    private Logger log = LoggerFactory.getLogger(SnsSubscriptionManagerConfig.class);
+public class SubscriptionManagerConfig {
+    private Logger log = LoggerFactory.getLogger(SubscriptionManagerConfig.class);
 
     @Bean(destroyMethod = "disconnect", initMethod = "connect")
     public SnsSubscriptionManager snsSubscriptionManager(GlobalPropertiesRepo globalPropertiesRepo,
