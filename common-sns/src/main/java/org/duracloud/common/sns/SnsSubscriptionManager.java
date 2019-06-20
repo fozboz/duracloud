@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Daniel Bernstein
  */
-public class SnsSubscriptionManager {
+public class SnsSubscriptionManager implements SubscriptionManager {
     private Logger log = LoggerFactory.getLogger(SnsSubscriptionManager.class);
 
     private AmazonSQS sqsClient;
