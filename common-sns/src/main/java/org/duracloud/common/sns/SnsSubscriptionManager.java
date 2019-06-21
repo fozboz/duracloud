@@ -54,10 +54,12 @@ public class SnsSubscriptionManager implements SubscriptionManager {
         this.snsClient = snsClient;
     }
 
+    @Override
     public void addListener(MessageListener listener) {
         this.messageListeners.add(listener);
     }
 
+    @Override
     public synchronized void connect() {
         if (initialized) {
             throw new DuraCloudRuntimeException("this manager is already connected");
@@ -170,6 +172,7 @@ public class SnsSubscriptionManager implements SubscriptionManager {
         }
     }
 
+    @Override
     public void disconnect() {
         if (!this.initialized) {
             throw new DuraCloudRuntimeException("this manager is already disconnected");

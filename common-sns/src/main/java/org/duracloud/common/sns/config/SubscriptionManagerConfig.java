@@ -75,6 +75,11 @@ public class SubscriptionManagerConfig {
                         log.warn("unable to dispatch message: " + message + " : " + e.getMessage(), e);
                     }
                 }
+
+                @Override
+                public void onMessage(String message) {
+
+                }
             });
 
             return subscriptionManager;
