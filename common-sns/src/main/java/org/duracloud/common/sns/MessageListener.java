@@ -14,4 +14,6 @@ import com.amazonaws.services.sqs.model.Message;
  */
 public interface MessageListener {
     void onMessage(Message message);
+
+    void onMessage(String message);
 }
