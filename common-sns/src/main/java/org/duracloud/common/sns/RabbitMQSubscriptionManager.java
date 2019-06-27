@@ -92,8 +92,6 @@ public class RabbitMQSubscriptionManager implements SubscriptionManager {
                                                                   AMQP.BasicProperties properties,
                                                                   byte[] body)
                                            throws IOException {
-                                           String routingKey = envelope.getRoutingKey();
-                                           String contentType = properties.getContentType();
                                            long deliveryTag = envelope.getDeliveryTag();
                                            String message = new String(body);
                                            dispatch(message);

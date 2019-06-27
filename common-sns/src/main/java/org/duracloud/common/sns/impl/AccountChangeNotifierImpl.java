@@ -12,6 +12,9 @@ import java.net.UnknownHostException;
 
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.AmazonSNSClientBuilder;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
 import org.duracloud.account.db.model.GlobalProperties;
 import org.duracloud.account.db.repo.GlobalPropertiesRepo;
 import org.duracloud.common.event.AccountChangeEvent;
@@ -30,17 +33,40 @@ public class AccountChangeNotifierImpl implements AccountChangeNotifier {
 
     private AmazonSNS snsClient;
 
+    private Channel rabbitMqChannel;
+
+    private String rabbitmqExchange;
+
+    private String notifierType;
+
     private GlobalPropertiesRepo globalPropertiesRepo;
 
     private static Logger log = LoggerFactory.getLogger(AccountChangeNotifierImpl.class);
 
     /**
-     * @param globalPropertiesConfigService
+     * @param globalPropertiesRepo
      */
     @Autowired
     public AccountChangeNotifierImpl(GlobalPropertiesRepo globalPropertiesRepo) {
-        this.snsClient = AmazonSNSClientBuilder.defaultClient();
         this.globalPropertiesRepo = globalPropertiesRepo;
+        GlobalProperties props = globalPropertiesRepo.findAll().get(0);
+        notifierType = props.getNotifierType();
+        if(notifierType == "AWS") {
+            this.snsClient = AmazonSNSClientBuilder.defaultClient();
+        }else if (notifierType == "RABBITMQ"){
+            ConnectionFactory factory = new ConnectionFactory();
+            factory.setUsername(props.getRabbitmqUsername());
+            factory.setPassword(props.getRabbitmqUsername());
+            factory.setVirtualHost("/");
+            factory.setHost(props.getRabbitmqHost());
+            factory.setPort(5672);
+            try {
+                Connection conn = factory.newConnection();
+                rabbitMqChannel = conn.createChannel();
+            }catch (Exception e){
+                log.error("Failed to connect to RabbitMQ: " + e.getMessage(), e);
+            }
+        }
     }
 
     @Override
@@ -61,9 +87,13 @@ public class AccountChangeNotifierImpl implements AccountChangeNotifier {
 
         try {
             log.debug("publishing event={}", event);
-            GlobalProperties props = globalPropertiesRepo.findAll().get(0);
-            this.snsClient.publish(props.getInstanceNotificationTopicArn(),
-                                   AccountChangeEvent.serialize(event));
+            if(notifierType == "AWS") {
+                GlobalProperties props = globalPropertiesRepo.findAll().get(0);
+                this.snsClient.publish(props.getInstanceNotificationTopicArn(),
+                                       AccountChangeEvent.serialize(event));
+            }else if (notifierType == "RABBITMQ") {
+                rabbitMqChannel.basicPublish(rabbitmqExchange, "", null, AccountChangeEvent.serialize(event).getBytes());
+            }
             log.info("published event={}", event);
         } catch (Exception e) {
             log.error("Failed to publish event: " + event + " : " + e.getMessage(), e);
