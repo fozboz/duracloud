@@ -19,7 +19,7 @@ import org.duracloud.common.queue.aws.SQSTaskQueue;
 import org.duracloud.common.queue.rabbitmq.RabbitMQTaskQueue;
 import org.duracloud.common.queue.noop.NoopTaskQueue;
 import org.duracloud.common.rest.DuraCloudRequestContextUtil;
-import org.duracloud.common.sns.AccountChangeNotifier;
+import org.duracloud.common.changenotifier.AccountChangeNotifier;
 import org.duracloud.common.util.UserUtil;
 import org.duracloud.durastore.test.MockRetryStorageProvider;
 import org.duracloud.durastore.test.MockVerifyCreateStorageProvider;

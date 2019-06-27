@@ -116,7 +116,7 @@
 
     <dependency>
       <groupId>org.duracloud</groupId>
-      <artifactId>common-sns</artifactId>
+      <artifactId>common-changenotifier</artifactId>
       <version>6.1.0-SNAPSHOT</version>
     </dependency>
 

@@ -5,7 +5,7 @@
  *
  *     http://duracloud.org/license/
  */
-package org.duracloud.common.sns;
+package org.duracloud.common.changenotifier;
 
 import java.util.ArrayList;
 import java.util.Arrays;

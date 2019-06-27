@@ -6,7 +6,7 @@
  *     http://duracloud.org/license/
  */
 
-package org.duracloud.common.sns.config;
+package org.duracloud.common.changenotifier.config;
 
 import java.io.IOException;
 import java.net.Inet4Address;
@@ -26,10 +26,10 @@ import org.duracloud.account.db.repo.GlobalPropertiesRepo;
 import org.duracloud.common.cache.AccountComponentCache;
 import org.duracloud.common.error.DuraCloudRuntimeException;
 import org.duracloud.common.event.AccountChangeEvent;
-import org.duracloud.common.sns.MessageListener;
-import org.duracloud.common.sns.SubscriptionManager;
-import org.duracloud.common.sns.SnsSubscriptionManager;
-import org.duracloud.common.sns.RabbitMQSubscriptionManager;
+import org.duracloud.common.changenotifier.MessageListener;
+import org.duracloud.common.changenotifier.SubscriptionManager;
+import org.duracloud.common.changenotifier.SnsSubscriptionManager;
+import org.duracloud.common.changenotifier.RabbitMQSubscriptionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;

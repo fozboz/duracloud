@@ -62,7 +62,7 @@
     <module>common-cache</module>
     <module>common-notification</module>
     <module>common-queue</module>
-    <module>common-sns</module>
+    <module>common-changenotifier</module>
     <module>common-aop</module>
     <module>storageprovider</module>
     <module>storeclient</module>
