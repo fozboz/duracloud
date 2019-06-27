@@ -1,4 +1,4 @@
-package org.duracloud.common.sns;
+package org.duracloud.common.changenotifier;
 
 import java.io.IOException;
 import java.util.ArrayList;

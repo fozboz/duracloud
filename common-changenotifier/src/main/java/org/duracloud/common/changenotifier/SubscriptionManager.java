@@ -1,4 +1,4 @@
-package org.duracloud.common.sns;
+package org.duracloud.common.changenotifier;
 
 public interface SubscriptionManager {
 
