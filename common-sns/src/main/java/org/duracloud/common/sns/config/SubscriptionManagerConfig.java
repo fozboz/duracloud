@@ -27,7 +27,9 @@ import org.duracloud.common.cache.AccountComponentCache;
 import org.duracloud.common.error.DuraCloudRuntimeException;
 import org.duracloud.common.event.AccountChangeEvent;
 import org.duracloud.common.sns.MessageListener;
+import org.duracloud.common.sns.SubscriptionManager;
 import org.duracloud.common.sns.SnsSubscriptionManager;
+import org.duracloud.common.sns.RabbitMQSubscriptionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -41,7 +43,7 @@ public class SubscriptionManagerConfig {
     private Logger log = LoggerFactory.getLogger(SubscriptionManagerConfig.class);
 
     @Bean(destroyMethod = "disconnect", initMethod = "connect")
-    public SnsSubscriptionManager snsSubscriptionManager(GlobalPropertiesRepo globalPropertiesRepo,
+    public SubscriptionManager subscriptionManager(GlobalPropertiesRepo globalPropertiesRepo,
                                                          final List<AccountComponentCache<?>> componentCaches,
                                                          String appName) {
         try {
@@ -49,10 +51,23 @@ public class SubscriptionManagerConfig {
             GlobalProperties props = globalPropertiesRepo.findAll().get(0);
             String queueName = "node-queue-" + appName + "-" +
                                Inet4Address.getLocalHost().getHostName().replace(".", "_");
-            SnsSubscriptionManager subscriptionManager =
-                new SnsSubscriptionManager(AmazonSQSClientBuilder.defaultClient(),
-                                           AmazonSNSClientBuilder.defaultClient(),
-                                           props.getInstanceNotificationTopicArn(), queueName);
+
+            SubscriptionManager subscriptionManager;
+
+            if(props.getNotifierType() == "AWS") {
+                //SNS
+                subscriptionManager =
+                    new SnsSubscriptionManager(AmazonSQSClientBuilder.defaultClient(),
+                                               AmazonSNSClientBuilder.defaultClient(),
+                                               props.getInstanceNotificationTopicArn(), queueName);
+            }else {
+                //RabbitMQ
+                subscriptionManager =
+                    new RabbitMQSubscriptionManager(props.getRabbitmqHost(),
+                                                    props.getRabbitmqExchange(),
+                                                    props.getRabbitmqUsername(),
+                                                    props.getRabbitmqPassword(), queueName);
+            }
 
             subscriptionManager.addListener(new MessageListener() {
                 @Override
@@ -78,7 +93,15 @@ public class SubscriptionManagerConfig {
 
                 @Override
                 public void onMessage(String message) {
-
+                    log.info("message received: " + message);
+                    try {
+                        AccountChangeEvent event = AccountChangeEvent.deserialize(message);
+                        for (AccountComponentCache<?> cache : componentCaches) {
+                            cache.onEvent(event);
+                        }
+                    } catch (Exception e) {
+                        log.warn("unable to dispatch message: " + message + " : " + e.getMessage(), e);
+                    }
                 }
             });
 
