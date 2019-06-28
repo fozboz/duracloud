@@ -61,15 +61,17 @@ public class RabbitMQSubscriptionManager implements SubscriptionManager {
             mqChannel = conn.createChannel();
             queueUrl = "RabbitMQ-" + conn.getAddress();
 
-            try {
-                //Queue Exists
-                mqChannel.queueBind(queueName, exchangeName, queueName);
-            }
-            catch (Exception ex) {
-                // Create Queue
-                mqChannel.queueDeclare(queueName, true, false, false, null);
-                mqChannel.queueBind(queueName, exchangeName, queueName);
-            }
+            mqChannel.queueDeclare(queueName, true, false, false, null);
+            mqChannel.queueBind(queueName, exchangeName, queueName);
+//            try {
+//                //Queue Exists
+//                mqChannel.queueBind(queueName, exchangeName, queueName);
+//            }
+//            catch (Exception ex) {
+//                // Create Queue
+//                mqChannel.queueDeclare(queueName, true, false, false, null);
+//                mqChannel.queueBind(queueName, exchangeName, queueName);
+//            }
 
             log.info("subscribing consumer {} to queue {} at URL {}", consumerName, queueName, queueUrl);
             startConsumer();
