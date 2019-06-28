@@ -51,15 +51,17 @@ public class AccountChangeNotifierImpl implements AccountChangeNotifier {
         this.globalPropertiesRepo = globalPropertiesRepo;
         GlobalProperties props = globalPropertiesRepo.findAll().get(0);
         notifierType = props.getNotifierType();
-        if(notifierType == "AWS") {
+        log.info("Notifier-Type: {}", notifierType);
+        if(notifierType.equalsIgnoreCase("AWS")) {
             this.snsClient = AmazonSNSClientBuilder.defaultClient();
-        }else if (notifierType == "RABBITMQ"){
+        }else {
             ConnectionFactory factory = new ConnectionFactory();
             factory.setUsername(props.getRabbitmqUsername());
             factory.setPassword(props.getRabbitmqUsername());
             factory.setVirtualHost("/");
             factory.setHost(props.getRabbitmqHost());
             factory.setPort(5672);
+            rabbitmqExchange = props.getRabbitmqExchange();
             try {
                 Connection conn = factory.newConnection();
                 rabbitMqChannel = conn.createChannel();
@@ -87,14 +89,15 @@ public class AccountChangeNotifierImpl implements AccountChangeNotifier {
 
         try {
             log.debug("publishing event={}", event);
-            if(notifierType == "AWS") {
+            if(notifierType.equalsIgnoreCase("AWS")) {
                 GlobalProperties props = globalPropertiesRepo.findAll().get(0);
                 this.snsClient.publish(props.getInstanceNotificationTopicArn(),
                                        AccountChangeEvent.serialize(event));
-            }else if (notifierType == "RABBITMQ") {
+                log.info("published event via SNS, event={}", event);
+            }else {
                 rabbitMqChannel.basicPublish(rabbitmqExchange, "", null, AccountChangeEvent.serialize(event).getBytes());
+                log.info("published event via RabbitMQ, exchange={}, event={}", rabbitmqExchange, event);
             }
-            log.info("published event={}", event);
         } catch (Exception e) {
             log.error("Failed to publish event: " + event + " : " + e.getMessage(), e);
         }

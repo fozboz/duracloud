@@ -54,7 +54,7 @@ public class SubscriptionManagerConfig {
 
             SubscriptionManager subscriptionManager;
 
-            if(props.getNotifierType() == "AWS") {
+            if(props.getNotifierType().equalsIgnoreCase("AWS")) {
                 //SNS
                 subscriptionManager =
                     new SnsSubscriptionManager(AmazonSQSClientBuilder.defaultClient(),
