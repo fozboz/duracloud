@@ -9,9 +9,9 @@ package org.duracloud.notification;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 import org.springframework.mail.javamail.JavaMailSenderImpl;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.duracloud.common.error.DuraCloudRuntimeException;
 import org.slf4j.Logger;
@@ -28,10 +28,22 @@ public class SpringNotificationFactory implements NotificationFactory {
 
     private JavaMailSenderImpl emailService;
     private Map<String, Emailer> emailerMap = new HashMap<String, Emailer>();
+    private String host;
+    private Integer port;
+
+    public SpringNotificationFactory(String host, Integer port){
+        this.host = host;
+        this.port = port;
+    }
 
     @Override
-    public void initialize(String host, Integer port, String username, String password) {
+    public void initialize(String username, String password) {
         emailService = new JavaMailSenderImpl();
+        Properties mailProperties = new Properties();
+        mailProperties.put("mail.smtp.auth", "true");
+        mailProperties.put("mail.smtp.starttls.enable", "true");
+        mailProperties.put("mail.smtp.starttls.required", "true");
+        emailService.setJavaMailProperties(mailProperties);
         emailService.setProtocol("smtp");
         emailService.setHost(host);
         emailService.setPort(port);

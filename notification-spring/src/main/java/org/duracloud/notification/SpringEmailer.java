@@ -53,7 +53,7 @@ public class SpringEmailer implements Emailer {
             messageHelper.setTo(recipients);
             messageHelper.setText(messageStr, isHtml);
             emailService.send(message);
-        }catch(MessagingException ex){
+        }catch(Exception ex){
             log.error("Failed to send email because: {}", ex.getMessage());
         }
     }
