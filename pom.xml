@@ -88,6 +88,7 @@
     <module>synctoolui</module>
     <module>retrievaltool</module>
     <module>integration</module>
+    <module>notification-spring</module>
   </modules>
 
   <profiles>
