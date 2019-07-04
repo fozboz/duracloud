@@ -38,13 +38,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * SQSTaskQueue acts as the interface for interacting with an Amazon
- * Simple Queue Service (SQS) queue.
- * This class provides a way to interact with a remote SQS Queue, it
+ * RabbitMQ implementation of the TaskQueue
  * emulates the functionality of a queue.
  *
- * @author Erik Paulsson
- * Date: 10/21/13
+ * @author Shibo Liu
+ * Date: 07/03/19
  */
 public class RabbitMQTaskQueue implements TaskQueue {
     private static Logger log = LoggerFactory.getLogger(RabbitMQTaskQueue.class);
@@ -61,15 +59,7 @@ public class RabbitMQTaskQueue implements TaskQueue {
     }
 
     /**
-     * Creates a SQSTaskQueue that serves as a handle to interacting with a
-     * remote Amazon SQS Queue.
-     * The AmazonSQSClient will search for Amazon credentials on the system as
-     * described here:
-     * http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/auth/DefaultAWSCredentialsProviderChain.html
-     *
-     * Moreover, it is possible to set the region to use via the AWS_REGION
-     * environment variable or one of the other methods described here:
-     * http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/java-dg-region-selection.html
+     * Creates RabbitMQ task queue, a RabbitMQ server is needed and a DIRECT exchange must be created and bound to the queue name provided (routing key must be the same as the queue name)
      */
     public RabbitMQTaskQueue(String host, String exchange, String username, String password,  String queueName) {
         try {
@@ -195,13 +185,6 @@ public class RabbitMQTaskQueue implements TaskQueue {
         }
     }
 
-    /**
-     * Puts multiple tasks on the queue using batch puts.  The tasks argument
-     * can contain more than 10 Tasks, in that case there will be multiple SQS
-     * batch send requests made each containing up to 10 messages.
-     *
-     * @param tasks
-     */
     @Override
     public void put(Set<Task> tasks) {
         for (Task task : tasks) {
@@ -273,6 +256,10 @@ public class RabbitMQTaskQueue implements TaskQueue {
         }
     }
 
+
+    /**
+     * RabbitMQ does not have this feature, messages would not be visible until rejected and requeued
+     */
     @Override
     public void extendVisibilityTimeout(Task task) throws TaskNotFoundException {
     }

@@ -15,6 +15,10 @@ import org.duracloud.common.error.DuraCloudRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @author Shibo Liu
+ */
+
 public class RabbitMQSubscriptionManager implements SubscriptionManager {
     private Logger log = LoggerFactory.getLogger(RabbitMQSubscriptionManager.class);
 
