@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.springframework.mail.javamail.JavaMailSenderImpl;
+import javax.mail.MessagingException;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.duracloud.common.error.DuraCloudRuntimeException;
 import org.slf4j.Logger;
@@ -45,11 +46,20 @@ public class SpringNotificationFactory implements NotificationFactory {
         mailProperties.put("mail.smtp.starttls.required", "true");
         emailService.setJavaMailProperties(mailProperties);
         emailService.setProtocol("smtp");
-        emailService.setHost(host);
+        emailService.setHost(host.trim());
         emailService.setPort(port);
-        emailService.setUsername(username);
-        emailService.setPassword(password);
-        log.debug("initialize email service with Sprint email client connected to {}, Port: {}, User: {}.", host, port, username);
+        emailService.setUsername(username.trim());
+        emailService.setPassword(password.trim());
+
+        try {
+            //Test the connection
+            emailService.testConnection();
+            log.debug("Emial connection test passed: email service with Sprint email client connected to {}, Port: {}, User: {}.", host, port, username);
+
+        } catch(MessagingException ex){
+            log.error("Email connection test failed when connecting to {}, Port: {}, User: {}, because {}", host, port, username, ex.getMessage());
+        }
+
     }
 
     @Override

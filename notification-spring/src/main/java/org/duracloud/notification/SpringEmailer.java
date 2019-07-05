@@ -14,7 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
-
+import org.springframework.mail.MailException;
 
 /**
  * @author Shibo Liu
@@ -52,8 +52,13 @@ public class SpringEmailer implements Emailer {
             messageHelper.setSubject(subject);
             messageHelper.setTo(recipients);
             messageHelper.setText(messageStr, isHtml);
+        }catch(MessagingException ex){
+            log.error("Failed to prepare email message {}", ex.getMessage());
+        }
+
+        try {
             emailService.send(message);
-        }catch(Exception ex){
+        }catch(MailException ex) {
             log.error("Failed to send email because: {}", ex.getMessage());
         }
     }
