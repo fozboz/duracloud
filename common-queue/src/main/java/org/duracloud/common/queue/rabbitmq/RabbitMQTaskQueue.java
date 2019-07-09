@@ -10,21 +10,16 @@ package org.duracloud.common.queue.rabbitmq;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.AMQP;
-import com.rabbitmq.client.GetResponse;
 import com.rabbitmq.client.Envelope;
+import com.rabbitmq.client.GetResponse;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.duracloud.common.error.DuraCloudRuntimeException;
 import org.duracloud.common.queue.TaskException;
@@ -96,9 +91,9 @@ public class RabbitMQTaskQueue implements TaskQueue {
 
     @Override
     public String getName() {
+
         return this.queueName;
     }
-
 
     protected Task marshallTask(byte[] msgBody, long deliveryTag, String routingKey, String exhcange) {
         Properties props = new Properties();
@@ -149,7 +144,6 @@ public class RabbitMQTaskQueue implements TaskQueue {
         return msgBody;
     }
 
-
     @Override
     public void put(final Task task) {
         try {
@@ -196,7 +190,7 @@ public class RabbitMQTaskQueue implements TaskQueue {
     public Set<Task> take(int maxTasks) throws TimeoutException {
         Integer size = size();
         if (size > 0) {
-            if(size < maxTasks){
+            if (size < maxTasks) {
                 size = maxTasks;
             }
             Set<Task> tasks = new HashSet<>();
@@ -206,7 +200,7 @@ public class RabbitMQTaskQueue implements TaskQueue {
                     tasks.add(task);
                 }
                 return tasks;
-            } catch (Exception e){
+            } catch (Exception e) {
                 for (Task task : tasks) {
                     requeue(task);
                 }
@@ -222,7 +216,7 @@ public class RabbitMQTaskQueue implements TaskQueue {
     @Override
     public Task take() throws TimeoutException {
         Integer size = size();
-        if(size > 0) {
+        if (size > 0) {
             try {
                 GetResponse response = mqChannel.basicGet(queueName, false);
                 if (response == null) {
@@ -250,7 +244,7 @@ public class RabbitMQTaskQueue implements TaskQueue {
                 throw new TimeoutException("No tasks available from queue: " +
                                            queueName + ", queueUrl: " + queueUrl);
             }
-        }else{
+        } else {
             throw new TimeoutException("No tasks available from queue: " +
                                        queueName + ", queueUrl: " + queueUrl);
         }
@@ -320,23 +314,25 @@ public class RabbitMQTaskQueue implements TaskQueue {
         try {
             Long sizeLong =  mqChannel.messageCount(queueName);
             return sizeLong.intValue();
-        }catch (Exception e) {
+        } catch (Exception e) {
             return 0;
         }
     }
 
     @Override
     public Integer sizeIncludingInvisibleAndDelayed() {
+
         return size() + unAcknowlededMesageCount;
     }
 
     private Integer getVisibilityTimeout() {
+
         return visibilityTimeout;
     }
 
     private String getQueueUrl() {
+
         return queueUrl;
     }
-
 
 }

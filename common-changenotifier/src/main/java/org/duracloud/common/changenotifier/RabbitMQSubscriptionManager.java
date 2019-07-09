@@ -4,13 +4,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.ShutdownSignalException;
-import com.rabbitmq.client.AMQP;
 import org.duracloud.common.error.DuraCloudRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +21,6 @@ import org.slf4j.LoggerFactory;
 
 public class RabbitMQSubscriptionManager implements SubscriptionManager {
     private Logger log = LoggerFactory.getLogger(RabbitMQSubscriptionManager.class);
-
     private Channel mqChannel;
     private String mqHost;
     private String queueName;
@@ -32,9 +31,8 @@ public class RabbitMQSubscriptionManager implements SubscriptionManager {
     private String consumerName;
     private boolean initialized = false;
     private List<MessageListener> messageListeners = new ArrayList<>();
-
-
-    public RabbitMQSubscriptionManager(String host, String exchange, String username, String password,  String queueName) {
+    public RabbitMQSubscriptionManager(String host, String exchange, String username, String password,
+                                       String queueName) {
         mqHost = host;
         exchangeName = exchange;
         mqUsername = username;
@@ -44,7 +42,8 @@ public class RabbitMQSubscriptionManager implements SubscriptionManager {
     }
 
     @Override
-    public void addListener(MessageListener listener)  {
+    public void addListener(MessageListener listener) {
+
         this.messageListeners.add(listener);
     }
 
@@ -65,24 +64,24 @@ public class RabbitMQSubscriptionManager implements SubscriptionManager {
             mqChannel = conn.createChannel();
             queueUrl = "RabbitMQ-" + conn.getAddress();
 
-            mqChannel.queueDeclare(queueName, true, false, false, null);
+            try {
+                //Queue Exists
+                mqChannel.queueDeclarePassive(queueName);
+            } catch (IOException ex) {
+                // Create Queue
+                log.info("queue does not exist, declaring new queue: {}", queueName);
+                mqChannel.queueDeclare(queueName, true, false, false, null);
+            }
+
             mqChannel.queueBind(queueName, exchangeName, queueName);
-//            try {
-//                //Queue Exists
-//                mqChannel.queueBind(queueName, exchangeName, queueName);
-//            }
-//            catch (Exception ex) {
-//                // Create Queue
-//                mqChannel.queueDeclare(queueName, true, false, false, null);
-//                mqChannel.queueBind(queueName, exchangeName, queueName);
-//            }
 
             log.info("subscribing consumer {} to queue {} at URL {}", consumerName, queueName, queueUrl);
             startConsumer();
 
         } catch (Exception ex) {
             initialized = false;
-            log.error("failed to estabilish connection to RabbitMQ with queue name {} and URL {} because {}", queueName, queueUrl, ex.getMessage());
+            log.error("failed to estabilish connection to RabbitMQ with queue name {} and URL {} because {}", queueName,
+                      queueUrl, ex.getMessage());
             throw new DuraCloudRuntimeException(ex);
         }
 
@@ -91,51 +90,50 @@ public class RabbitMQSubscriptionManager implements SubscriptionManager {
     private void startConsumer() {
         try {
             mqChannel.basicConsume(queueName, false, consumerName,
-                                   new DefaultConsumer(mqChannel) {
-                                       @Override
-                                       public void handleDelivery(String consumerTag,
-                                                                  Envelope envelope,
-                                                                  AMQP.BasicProperties properties,
-                                                                  byte[] body)
-                                           throws IOException {
-                                           long deliveryTag = envelope.getDeliveryTag();
-                                           String message = new String(body);
-                                           dispatch(message);
-                                           log.debug("{} dispatched", message);
-                                           mqChannel.basicAck(deliveryTag, false);
-                                           log.debug("{} deleted", message);
-                                       }
+                new DefaultConsumer(mqChannel) {
 
+                    @Override
+                    public void handleDelivery(String consumerTag,
+                                              Envelope envelope,
+                                              AMQP.BasicProperties properties,
+                                              byte[] body)
+                        throws IOException {
+                        long deliveryTag = envelope.getDeliveryTag();
+                        String message = new String(body);
+                        dispatch(message);
+                        log.debug("{} dispatched", message);
+                        mqChannel.basicAck(deliveryTag, false);
+                        log.debug("{} deleted", message);
+                    }
 
-                                       @Override
-                                       public void handleConsumeOk(String consumerTag) {
-                                           log.info("Consumer registered: {}", consumerTag);
-                                           initialized = true;
-                                       }
+                    @Override
+                    public void handleConsumeOk(String consumerTag) {
+                        log.info("Consumer registered: {}", consumerTag);
+                        initialized = true;
+                    }
 
-                                       @Override
-                                       public void handleCancel(String consumerTag) throws IOException {
-                                           // consumer has been cancelled unexpectedly
-                                           log.debug("consumer has been cancelled unexpectedly: " + consumerTag);
-                                       }
+                    @Override
+                    public void handleCancel(String consumerTag) {
+                        // consumer has been cancelled unexpectedly
+                        log.debug("consumer has been cancelled unexpectedly: " + consumerTag);
+                    }
 
-                                       @Override
-                                       public void handleCancelOk(String consumerTag) {
-                                           // consumer has been cancelled explicitly
-                                           log.info("consumer has been cancelled successfully: " + consumerTag);
-                                       }
+                    @Override
+                    public void handleCancelOk(String consumerTag) {
+                        // consumer has been cancelled explicitly
+                        log.info("consumer has been cancelled successfully: " + consumerTag);
+                    }
 
-                                       @Override
-                                       public void handleShutdownSignal(String consumerTag,  ShutdownSignalException sig) {
-                                           // either the channel or the underlying connection has been shut down.
-                                           log.debug("either the channel or the underlying connection has been shut down for consumer {} because {}", consumerTag, sig.getReason().toString());
-                                           initialized = false;
-                                       }
+                    @Override
+                    public void handleShutdownSignal(String consumerTag, ShutdownSignalException sig) {
+                       // either the channel or the underlying connection has been shut down.
+                        log.debug("either the channel or the underlying connection has been shut down for consumer {} because {}", consumerTag, sig.getReason().toString());
+                        initialized = false;
+                    }
 
-                                   });
+                });
 
-
-        } catch (Exception e){
+        } catch (Exception e) {
             log.debug("consumer failed to subscribe: " + e.getMessage(), e);
             initialized = false;
         }
@@ -158,24 +156,23 @@ public class RabbitMQSubscriptionManager implements SubscriptionManager {
         }
     }
 
-    private void cancelConsumer(){
+    private void cancelConsumer() {
         try {
             mqChannel.basicCancel(consumerName);
             log.info("unsubscripbed consumer {}", consumerName);
-        }catch(IOException e){
+        } catch (IOException e) {
             log.info("error unsubscribing consumer {}", consumerName, e);
         }
     }
 
-    private void deleteQueue(){
+    private void deleteQueue() {
         try {
             mqChannel.queueDelete(queueName);
             log.info("deleted queue {}", queueName);
-        }catch(IOException e){
+        } catch (IOException e) {
             log.info("error deleting queue {}", queueName, e);
         }
     }
-
 
     @Override
     public void disconnect() {

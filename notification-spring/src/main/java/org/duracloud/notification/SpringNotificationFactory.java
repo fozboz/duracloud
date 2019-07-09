@@ -11,12 +11,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import org.springframework.mail.javamail.JavaMailSenderImpl;
 import javax.mail.MessagingException;
+
 import org.apache.commons.validator.routines.EmailValidator;
+
 import org.duracloud.common.error.DuraCloudRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 
 /**
  * @author Shibo Liu
@@ -32,7 +34,7 @@ public class SpringNotificationFactory implements NotificationFactory {
     private String host;
     private Integer port;
 
-    public SpringNotificationFactory(String host, Integer port){
+    public SpringNotificationFactory(String host, Integer port) {
         this.host = host;
         this.port = port;
     }
@@ -54,10 +56,14 @@ public class SpringNotificationFactory implements NotificationFactory {
         try {
             //Test the connection
             emailService.testConnection();
-            log.debug("Emial connection test passed: email service with Sprint email client connected to {}, Port: {}, User: {}.", host, port, username);
+            log.debug(
+                "Emial connection test passed: email service with Sprint email client connected to {}, Port: {}, " +
+                "User: {}.",
+                host, port, username);
 
-        } catch(MessagingException ex){
-            log.error("Email connection test failed when connecting to {}, Port: {}, User: {}, because {}", host, port, username, ex.getMessage());
+        } catch (MessagingException ex) {
+            log.error("Email connection test failed when connecting to {}, Port: {}, User: {}, because {}", host, port,
+                      username, ex.getMessage());
         }
 
     }

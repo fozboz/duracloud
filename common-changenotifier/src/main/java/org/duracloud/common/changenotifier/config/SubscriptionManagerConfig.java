@@ -24,12 +24,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.duracloud.account.db.model.GlobalProperties;
 import org.duracloud.account.db.repo.GlobalPropertiesRepo;
 import org.duracloud.common.cache.AccountComponentCache;
+import org.duracloud.common.changenotifier.MessageListener;
+import org.duracloud.common.changenotifier.RabbitMQSubscriptionManager;
+import org.duracloud.common.changenotifier.SnsSubscriptionManager;
+import org.duracloud.common.changenotifier.SubscriptionManager;
 import org.duracloud.common.error.DuraCloudRuntimeException;
 import org.duracloud.common.event.AccountChangeEvent;
-import org.duracloud.common.changenotifier.MessageListener;
-import org.duracloud.common.changenotifier.SubscriptionManager;
-import org.duracloud.common.changenotifier.SnsSubscriptionManager;
-import org.duracloud.common.changenotifier.RabbitMQSubscriptionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -44,8 +44,8 @@ public class SubscriptionManagerConfig {
 
     @Bean(destroyMethod = "disconnect", initMethod = "connect")
     public SubscriptionManager subscriptionManager(GlobalPropertiesRepo globalPropertiesRepo,
-                                                         final List<AccountComponentCache<?>> componentCaches,
-                                                         String appName) {
+                                                   final List<AccountComponentCache<?>> componentCaches,
+                                                   String appName) {
         try {
 
             GlobalProperties props = globalPropertiesRepo.findAll().get(0);
@@ -54,13 +54,13 @@ public class SubscriptionManagerConfig {
 
             SubscriptionManager subscriptionManager;
 
-            if(props.getNotifierType().equalsIgnoreCase("AWS")) {
+            if (props.getNotifierType().equalsIgnoreCase("AWS")) {
                 //SNS
                 subscriptionManager =
                     new SnsSubscriptionManager(AmazonSQSClientBuilder.defaultClient(),
                                                AmazonSNSClientBuilder.defaultClient(),
                                                props.getInstanceNotificationTopicArn(), queueName);
-            }else {
+            } else {
                 //RabbitMQ
                 subscriptionManager =
                     new RabbitMQSubscriptionManager(props.getRabbitmqHost(),

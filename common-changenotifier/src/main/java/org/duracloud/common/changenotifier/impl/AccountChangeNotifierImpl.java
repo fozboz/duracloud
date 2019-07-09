@@ -17,9 +17,9 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import org.duracloud.account.db.model.GlobalProperties;
 import org.duracloud.account.db.repo.GlobalPropertiesRepo;
+import org.duracloud.common.changenotifier.AccountChangeNotifier;
 import org.duracloud.common.event.AccountChangeEvent;
 import org.duracloud.common.event.AccountChangeEvent.EventType;
-import org.duracloud.common.changenotifier.AccountChangeNotifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,9 +52,9 @@ public class AccountChangeNotifierImpl implements AccountChangeNotifier {
         GlobalProperties props = globalPropertiesRepo.findAll().get(0);
         notifierType = props.getNotifierType();
         log.info("Notifier-Type: {}", notifierType);
-        if(notifierType.equalsIgnoreCase("AWS")) {
+        if (notifierType.equalsIgnoreCase("AWS")) {
             this.snsClient = AmazonSNSClientBuilder.defaultClient();
-        }else {
+        } else {
             ConnectionFactory factory = new ConnectionFactory();
             factory.setUsername(props.getRabbitmqUsername());
             factory.setPassword(props.getRabbitmqUsername());
@@ -65,7 +65,7 @@ public class AccountChangeNotifierImpl implements AccountChangeNotifier {
             try {
                 Connection conn = factory.newConnection();
                 rabbitMqChannel = conn.createChannel();
-            }catch (Exception e){
+            } catch (Exception e) {
                 log.error("Failed to connect to RabbitMQ: " + e.getMessage(), e);
             }
         }
@@ -73,6 +73,7 @@ public class AccountChangeNotifierImpl implements AccountChangeNotifier {
 
     @Override
     public void accountChanged(String account) {
+
         publish(AccountChangeEvent.EventType.ACCOUNT_CHANGED, account);
     }
 
@@ -89,13 +90,14 @@ public class AccountChangeNotifierImpl implements AccountChangeNotifier {
 
         try {
             log.debug("publishing event={}", event);
-            if(notifierType.equalsIgnoreCase("AWS")) {
+            if (notifierType.equalsIgnoreCase("AWS")) {
                 GlobalProperties props = globalPropertiesRepo.findAll().get(0);
                 this.snsClient.publish(props.getInstanceNotificationTopicArn(),
                                        AccountChangeEvent.serialize(event));
                 log.info("published event via SNS, event={}", event);
-            }else {
-                rabbitMqChannel.basicPublish(rabbitmqExchange, "", null, AccountChangeEvent.serialize(event).getBytes());
+            } else {
+                rabbitMqChannel
+                    .basicPublish(rabbitmqExchange, "", null, AccountChangeEvent.serialize(event).getBytes());
                 log.info("published event via RabbitMQ, exchange={}, event={}", rabbitmqExchange, event);
             }
         } catch (Exception e) {
@@ -117,11 +119,13 @@ public class AccountChangeNotifierImpl implements AccountChangeNotifier {
 
     @Override
     public void rootUsersChanged() {
+
         publish(EventType.ALL_ACCOUNTS_CHANGED, null);
     }
 
     @Override
     public void storageProviderCacheOnNodeChanged(String account) {
+
         publish(EventType.STORAGE_PROVIDER_CACHE_ON_NODE_CHANGED, account);
     }
 }
