@@ -49,12 +49,15 @@ public class AccountChangeNotifierImpl implements AccountChangeNotifier {
     @Autowired
     public AccountChangeNotifierImpl(GlobalPropertiesRepo globalPropertiesRepo) {
         this.globalPropertiesRepo = globalPropertiesRepo;
-        GlobalProperties props = globalPropertiesRepo.findAll().get(0);
-        notifierType = props.getNotifierType();
+        GlobalProperties props = null;
+        try {
+            props = globalPropertiesRepo.findAll().get(0);
+            notifierType = props.getNotifierType();
+        } catch (Exception e) {
+            notifierType = "AWS";
+        }
         log.info("Notifier-Type: {}", notifierType);
-        if (notifierType.equalsIgnoreCase("AWS")) {
-            this.snsClient = AmazonSNSClientBuilder.defaultClient();
-        } else {
+        if (notifierType.equalsIgnoreCase("RABBITMQ")) {
             ConnectionFactory factory = new ConnectionFactory();
             factory.setUsername(props.getRabbitmqUsername());
             factory.setPassword(props.getRabbitmqUsername());
@@ -62,11 +65,20 @@ public class AccountChangeNotifierImpl implements AccountChangeNotifier {
             factory.setHost(props.getRabbitmqHost());
             factory.setPort(5672);
             rabbitmqExchange = props.getRabbitmqExchange();
+            log.info("RabbitMQ Host: [}, Exchange: {}", props.getRabbitmqHost(), rabbitmqExchange);
             try {
                 Connection conn = factory.newConnection();
                 rabbitMqChannel = conn.createChannel();
             } catch (Exception e) {
-                log.error("Failed to connect to RabbitMQ: " + e.getMessage(), e);
+                log.error("Failed to connect to RabbitMQ because: " + e.getMessage(), e);
+            }
+        } else {
+            //Default AWS Client
+            log.info("Initiate default SNS client");
+            try {
+                this.snsClient = AmazonSNSClientBuilder.defaultClient();
+            } catch (Exception e) {
+                log.error("Failed to initiate SNS client because: " + e.getMessage(), e);
             }
         }
     }
