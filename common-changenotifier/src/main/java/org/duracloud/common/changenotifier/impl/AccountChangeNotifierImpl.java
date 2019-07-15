@@ -65,7 +65,7 @@ public class AccountChangeNotifierImpl implements AccountChangeNotifier {
             factory.setHost(props.getRabbitmqHost());
             factory.setPort(5672);
             rabbitmqExchange = props.getRabbitmqExchange();
-            log.info("RabbitMQ Host: [}, Exchange: {}", props.getRabbitmqHost(), rabbitmqExchange);
+            log.info("RabbitMQ Host: {}, Exchange: {}", props.getRabbitmqHost(), rabbitmqExchange);
             try {
                 Connection conn = factory.newConnection();
                 rabbitMqChannel = conn.createChannel();
@@ -102,15 +102,15 @@ public class AccountChangeNotifierImpl implements AccountChangeNotifier {
 
         try {
             log.debug("publishing event={}", event);
-            if (notifierType.equalsIgnoreCase("AWS")) {
+            if (notifierType.equalsIgnoreCase("RABBITMQ")) {
+                rabbitMqChannel
+                    .basicPublish(rabbitmqExchange, "", null, AccountChangeEvent.serialize(event).getBytes());
+                log.info("published event via RabbitMQ, exchange={}, event={}", rabbitmqExchange, event);
+            } else {
                 GlobalProperties props = globalPropertiesRepo.findAll().get(0);
                 this.snsClient.publish(props.getInstanceNotificationTopicArn(),
                                        AccountChangeEvent.serialize(event));
                 log.info("published event via SNS, event={}", event);
-            } else {
-                rabbitMqChannel
-                    .basicPublish(rabbitmqExchange, "", null, AccountChangeEvent.serialize(event).getBytes());
-                log.info("published event via RabbitMQ, exchange={}, event={}", rabbitmqExchange, event);
             }
         } catch (Exception e) {
             log.error("Failed to publish event: " + event + " : " + e.getMessage(), e);

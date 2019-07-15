@@ -54,19 +54,19 @@ public class SubscriptionManagerConfig {
 
             SubscriptionManager subscriptionManager;
 
-            if (props.getNotifierType().equalsIgnoreCase("AWS")) {
-                //SNS
-                subscriptionManager =
-                    new SnsSubscriptionManager(AmazonSQSClientBuilder.defaultClient(),
-                                               AmazonSNSClientBuilder.defaultClient(),
-                                               props.getInstanceNotificationTopicArn(), queueName);
-            } else {
+            if (props.getNotifierType().equalsIgnoreCase("RABBITMQ")) {
                 //RabbitMQ
                 subscriptionManager =
                     new RabbitMQSubscriptionManager(props.getRabbitmqHost(),
                                                     props.getRabbitmqExchange(),
                                                     props.getRabbitmqUsername(),
                                                     props.getRabbitmqPassword(), queueName);
+            } else {
+                //SNS
+                subscriptionManager =
+                    new SnsSubscriptionManager(AmazonSQSClientBuilder.defaultClient(),
+                                               AmazonSNSClientBuilder.defaultClient(),
+                                               props.getInstanceNotificationTopicArn(), queueName);
             }
 
             subscriptionManager.addListener(new MessageListener() {

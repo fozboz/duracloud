@@ -139,14 +139,16 @@ public class StorageProviderFactoryImpl extends ProviderFactoryBase
                 this.auditQueue = new NoopTaskQueue();
             } else {
                 String queueType = auditConfig.getAuditQueueType();
-                if (queueType == "AWS") {
-                    this.auditQueue = new SQSTaskQueue(queueName);
-                } else {
+                if (queueType.equalsIgnoreCase("RABBITMQ")) {
+                    //RabbitMQ
                     String host = auditConfig.getRabbitmqHost();
                     String exchange = auditConfig.getRabbitmqExchange();
                     String username = auditConfig.getRabbitmqUsername();
                     String password = auditConfig.getRabbitmqPassword();
                     this.auditQueue = new RabbitMQTaskQueue(host, exchange, username, password, queueName);
+                } else {
+                    //AWS - SQS
+                    this.auditQueue = new SQSTaskQueue(queueName);
                 }
             }
         }
