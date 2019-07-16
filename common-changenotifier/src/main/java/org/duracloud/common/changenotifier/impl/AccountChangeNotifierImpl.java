@@ -60,7 +60,7 @@ public class AccountChangeNotifierImpl implements AccountChangeNotifier {
         if (notifierType.equalsIgnoreCase("RABBITMQ")) {
             ConnectionFactory factory = new ConnectionFactory();
             factory.setUsername(props.getRabbitmqUsername());
-            factory.setPassword(props.getRabbitmqUsername());
+            factory.setPassword(props.getRabbitmqPassword());
             factory.setVirtualHost("/");
             factory.setHost(props.getRabbitmqHost());
             factory.setPort(5672);
