@@ -240,7 +240,7 @@ public class RabbitMQTaskQueue implements TaskQueue {
                     return task;
                 }
             } catch (Exception ex) {
-                log.error("failed to take task from {} due to {}", queueName, ex.getMessage());
+                log.error("failed to take task from " + queueName + " due to " + ex.getMessage(), ex);
                 throw new TimeoutException("No tasks available from queue: " +
                                            queueName + ", queueUrl: " + queueUrl);
             }
