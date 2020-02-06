@@ -14,6 +14,7 @@ import org.duracloud.snapshot.SnapshotConstants;
 import org.duracloud.snapshot.dto.task.CompleteSnapshotTaskParameters;
 import org.duracloud.snapshot.dto.task.CompleteSnapshotTaskResult;
 import org.duracloud.snapshotstorage.SnapshotStorageProvider;
+import org.duracloud.storage.domain.StorageProviderType;
 import org.duracloud.storage.provider.StorageProvider;
 import org.duracloud.storage.provider.TaskRunner;
 import org.slf4j.Logger;
@@ -56,8 +57,10 @@ public class CompleteSnapshotTaskRunner implements TaskRunner {
 
         log.info("Performing Complete Snapshot Task for spaceID: " + spaceId);
 
-        // Remove policy on bucket
-        s3Client.deleteBucketLifecycleConfiguration(bucketName);
+        if (unwrappedSnapshotProvider.getStorageProviderType().equals(StorageProviderType.AMAZON_S3)) {
+            // Remove policy on bucket
+            s3Client.deleteBucketLifecycleConfiguration(bucketName);
+        }
 
         // Clear space properties (removes snapshot ID and other props)
         unwrappedSnapshotProvider

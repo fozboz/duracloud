@@ -28,6 +28,7 @@ import org.duracloud.glacierstorage.GlacierStorageProvider;
 import org.duracloud.irodsstorage.IrodsStorageProvider;
 import org.duracloud.s3storage.S3StorageProvider;
 import org.duracloud.snapshotstorage.ChronopolisStorageProvider;
+import org.duracloud.snapshotstorage.LockssStorageProvider;
 import org.duracloud.storage.domain.AuditConfig;
 import org.duracloud.storage.domain.DuraStoreInitConfig;
 import org.duracloud.storage.domain.StorageAccount;
@@ -240,6 +241,8 @@ public class StorageProviderFactoryImpl extends ProviderFactoryBase
                                                        account.getOptions());
         } else if (type.equals(StorageProviderType.CHRONOPOLIS)) {
             storageProvider = new ChronopolisStorageProvider(username, password, account.getOptions());
+        } else if (type.equals(StorageProviderType.LOCKSS)) {
+            storageProvider = new LockssStorageProvider(username, password, account.getOptions());
         } else if (type.equals(StorageProviderType.TEST_RETRY)) {
             storageProvider = new MockRetryStorageProvider();
         } else if (type.equals(StorageProviderType.TEST_VERIFY_CREATE)) {

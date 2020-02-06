@@ -276,6 +276,11 @@ body > #page-header
     background:url(../images/swift.png) no-repeat;
 }
 
+.lockss-logo
+{
+    background:url(../images/lockss-logo.png) no-repeat;
+}
+
 .ui-layout-resizer
 {
 	background-color:#4b4b4b;

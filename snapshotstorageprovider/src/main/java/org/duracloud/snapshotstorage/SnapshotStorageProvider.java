@@ -10,8 +10,9 @@ package org.duracloud.snapshotstorage;
 import java.util.Map;
 
 import com.amazonaws.services.s3.AmazonS3;
-import org.duracloud.s3storage.S3StorageProvider;
+//import org.duracloud.s3storage.S3StorageProvider;
 import org.duracloud.s3storage.StoragePolicy;
+import org.duracloud.swiftstorage.SwiftStorageProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,14 +25,10 @@ import org.slf4j.LoggerFactory;
  * @author Bill Branan
  * Date: 1/28/14
  */
-public abstract class SnapshotStorageProvider extends S3StorageProvider {
+public abstract class SnapshotStorageProvider extends SwiftStorageProvider {
 
     private final Logger log =
         LoggerFactory.getLogger(SnapshotStorageProvider.class);
-
-    public SnapshotStorageProvider(String accessKey, String secretKey) {
-        super(accessKey, secretKey);
-    }
 
     public SnapshotStorageProvider(String accessKey, String secretKey,
                                    Map<String, String> options) {
@@ -40,7 +37,7 @@ public abstract class SnapshotStorageProvider extends S3StorageProvider {
 
     public SnapshotStorageProvider(AmazonS3 s3Client, String accessKey,
                                    Map<String, String> options) {
-        super(s3Client, accessKey, options);
+        super(s3Client, accessKey);
     }
 
     @Override

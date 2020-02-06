@@ -290,7 +290,8 @@ public class SpaceUtil {
 
     protected static boolean isSnapshotProvider(ContentStore store) {
         String providerType = store.getStorageProviderType();
-        return providerType.equals(StorageProviderType.CHRONOPOLIS.name());
+        return providerType.equals(StorageProviderType.CHRONOPOLIS.name())
+                || providerType.equals(StorageProviderType.LOCKSS.name());
     }
 
     public static boolean isAdmin(Authentication authentication) {

@@ -22,6 +22,7 @@ import java.util.Set;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration;
+
 import org.duracloud.audit.task.AuditTask;
 import org.duracloud.audit.task.AuditTask.ActionType;
 import org.duracloud.common.error.DuraCloudRuntimeException;
@@ -35,6 +36,7 @@ import org.duracloud.snapshot.SnapshotConstants;
 import org.duracloud.snapshot.dto.task.CleanupSnapshotTaskParameters;
 import org.duracloud.snapshot.dto.task.CleanupSnapshotTaskResult;
 import org.duracloud.snapshotstorage.SnapshotStorageProvider;
+import org.duracloud.storage.domain.StorageProviderType;
 import org.duracloud.storage.provider.TaskRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +55,7 @@ public class CleanupSnapshotTaskRunner implements TaskRunner {
         LoggerFactory.getLogger(CleanupSnapshotTaskRunner.class);
 
     private static int EXPIRATION_DAYS = 1;
+    private static int EXPIRATION_SECONDS = 86400;
 
     private SnapshotStorageProvider unwrappedSnapshotProvider;
     private AmazonS3 s3Client;
@@ -105,9 +108,15 @@ public class CleanupSnapshotTaskRunner implements TaskRunner {
         BucketLifecycleConfiguration configuration =
             new BucketLifecycleConfiguration().withRules(rules);
 
-        // Set policy on bucket
-        s3Client.setBucketLifecycleConfiguration(bucketName, configuration);
-
+        if (unwrappedSnapshotProvider.getStorageProviderType().equals(StorageProviderType.AMAZON_S3)) {
+            // Set policy on bucket
+            s3Client.setBucketLifecycleConfiguration(bucketName, configuration);
+        } else if (unwrappedSnapshotProvider.getStorageProviderType().equals(StorageProviderType.LOCKSS)) {
+            List<String> contents = unwrappedSnapshotProvider.getSpaceContentsChunked(spaceId, null, 1000,null);
+            for (String contentId : contents) {
+                unwrappedSnapshotProvider.expireObject(bucketName, contentId, EXPIRATION_SECONDS);
+            }
+        }
         queueContentDeleteAuditTasks(spaceId, userId);
 
         log.info("Cleanup Snapshot Task for space " + spaceId +
