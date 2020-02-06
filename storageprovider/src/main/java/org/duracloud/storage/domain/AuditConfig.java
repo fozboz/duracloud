@@ -14,6 +14,7 @@ package org.duracloud.storage.domain;
 public class AuditConfig {
 
     private String auditQueueName;
+    private String s3Type;
     private String auditLogSpaceId;
     private String auditQueueType;
     private String rabbitmqHost;
@@ -35,6 +36,14 @@ public class AuditConfig {
     public void setAuditQueueName(String auditQueueName) {
 
         this.auditQueueName = auditQueueName;
+    }
+
+    public String getS3Type() {
+        return s3Type;
+    }
+
+    public void setS3Type(String s3Type) {
+        this.s3Type = s3Type;
     }
 
     public String getAuditLogSpaceId() {

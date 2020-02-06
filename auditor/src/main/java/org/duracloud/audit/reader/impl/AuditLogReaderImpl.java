@@ -126,7 +126,7 @@ public class AuditLogReaderImpl implements AuditLogReader {
     }
 
     protected StorageProvider getStorageProvider() {
-        if (auditConfig.getSwiftEndpoint() != null) {
+        if (auditConfig.getS3Type() == "SWIFT") {
             Map<String, String> map = new HashMap<String, String>();
             map.put(OPTS.SWIFT_S3_ENDPOINT.name(), auditConfig.getSwiftEndpoint());
             map.put(OPTS.SWIFT_S3_SIGNER_TYPE.name(), auditConfig.getSwiftSignerType());

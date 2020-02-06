@@ -26,6 +26,7 @@ public class AuditConfigBuilder {
         DuracloudMill mill = millRepo.findAll().get(0);
         config.setAuditLogSpaceId(mill.getAuditLogSpaceId());
         config.setAuditQueueName(mill.getAuditQueue());
+        config.setS3Type(mill.getS3Type());
         config.setAuditQueueType(mill.getAuditQueueType());
         config.setRabbitmqHost(mill.getRabbitmqHost());
         config.setRabbitmqPort(mill.getRabbitmqPort());
