@@ -89,6 +89,10 @@ public class AuditConfig {
         this.rabbitmqExchange = rabbitmqExchange;
     }
 
+    public String getRabbitmqUsername() {
+        return rabbitmqUsername;
+    }
+
     public void setRabbitmqUsername(String rabbitmqUsername) {
         this.rabbitmqUsername = rabbitmqUsername;
     }
@@ -101,17 +105,29 @@ public class AuditConfig {
         this.rabbitmqPassword = rabbitmqPassword;
     }
 
-    public String getAwsAccessKey() { return awsAccessKey; }
+    public String getAwsAccessKey() {
+        return awsAccessKey;
+    }
 
-    public void setAwsAccessKey(String awsAccessKey) { this.awsAccessKey = awsAccessKey; }
+    public void setAwsAccessKey(String awsAccessKey) {
+        this.awsAccessKey = awsAccessKey;
+    }
 
-    public String getAwsSecretKey() { return awsSecretKey; }
+    public String getAwsSecretKey() {
+        return awsSecretKey;
+    }
 
-    public void setAwsSecretKey(String awsSecretKey) { this.awsSecretKey = awsSecretKey; }
+    public void setAwsSecretKey(String awsSecretKey) {
+        this.awsSecretKey = awsSecretKey;
+    }
 
-    public String getSwiftEndpoint() { return swiftEndpoint; }
+    public String getSwiftEndpoint() {
+        return swiftEndpoint;
+    }
 
-    public void setSwiftEndpoint(String swiftEndpoint) { this.swiftEndpoint = swiftEndpoint; }
+    public void setSwiftEndpoint(String swiftEndpoint) {
+        this.swiftEndpoint = swiftEndpoint;
+    }
 
     public String getSwiftSignerType() {
         return swiftSignerType;
