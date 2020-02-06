@@ -14,7 +14,6 @@ package org.duracloud.storage.domain;
 public class AuditConfig {
 
     private String auditQueueName;
-    private String awsType;
     private String auditLogSpaceId;
     private String auditQueueType;
     private String rabbitmqHost;
@@ -25,9 +24,8 @@ public class AuditConfig {
     private String rabbitmqPassword;
     private String awsAccessKey;
     private String awsSecretKey;
-    private String awsRegion;
-    private String awsEndpoint;
-    private String awsSignerType;
+    private String swiftEndpoint;
+    private String swiftSignerType;
 
     public String getAuditQueueName() {
 
@@ -37,14 +35,6 @@ public class AuditConfig {
     public void setAuditQueueName(String auditQueueName) {
 
         this.auditQueueName = auditQueueName;
-    }
-
-    public String getAwsType() {
-        return awsType;
-    }
-
-    public void setAwsType(String awsType) {
-        this.awsType = awsType;
     }
 
     public String getAuditLogSpaceId() {
@@ -99,10 +89,6 @@ public class AuditConfig {
         this.rabbitmqExchange = rabbitmqExchange;
     }
 
-    public String getRabbitmqUsername() {
-        return rabbitmqUsername;
-    }
-
     public void setRabbitmqUsername(String rabbitmqUsername) {
         this.rabbitmqUsername = rabbitmqUsername;
     }
@@ -115,43 +101,23 @@ public class AuditConfig {
         this.rabbitmqPassword = rabbitmqPassword;
     }
 
-    public String getAwsAccessKey() {
-        return awsAccessKey;
+    public String getAwsAccessKey() { return awsAccessKey; }
+
+    public void setAwsAccessKey(String awsAccessKey) { this.awsAccessKey = awsAccessKey; }
+
+    public String getAwsSecretKey() { return awsSecretKey; }
+
+    public void setAwsSecretKey(String awsSecretKey) { this.awsSecretKey = awsSecretKey; }
+
+    public String getSwiftEndpoint() { return swiftEndpoint; }
+
+    public void setSwiftEndpoint(String swiftEndpoint) { this.swiftEndpoint = swiftEndpoint; }
+
+    public String getSwiftSignerType() {
+        return swiftSignerType;
     }
 
-    public void setAwsAccessKey(String awsAccessKey) {
-        this.awsAccessKey = awsAccessKey;
-    }
-
-    public String getAwsSecretKey() {
-        return awsSecretKey;
-    }
-
-    public void setAwsSecretKey(String awsSecretKey) {
-        this.awsSecretKey = awsSecretKey;
-    }
-
-    public String getAwsRegion() {
-        return awsRegion;
-    }
-
-    public void setAwsRegion(String awsRegion) {
-        this.awsRegion = awsRegion;
-    }
-
-    public String getAwsEndpoint() {
-        return awsEndpoint;
-    }
-
-    public void setAwsEndpoint(String awsEndpoint) {
-        this.awsEndpoint = awsEndpoint;
-    }
-
-    public String getAwsSignerType() {
-        return awsSignerType;
-    }
-
-    public void setAwsSignerType(String awsSignerType) {
-        this.awsSignerType = awsSignerType;
+    public void setSwiftSignerType(String swiftSignerType) {
+        this.swiftSignerType = swiftSignerType;
     }
 }
