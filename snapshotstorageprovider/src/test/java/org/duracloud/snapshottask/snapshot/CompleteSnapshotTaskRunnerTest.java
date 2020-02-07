@@ -13,6 +13,7 @@ import java.util.Map;
 
 import com.amazonaws.services.s3.AmazonS3;
 import org.duracloud.snapshotstorage.SnapshotStorageProvider;
+import org.duracloud.storage.domain.StorageProviderType;
 import org.duracloud.storage.provider.StorageProvider;
 import org.easymock.EasyMock;
 import org.junit.After;
@@ -65,6 +66,8 @@ public class CompleteSnapshotTaskRunnerTest {
 
         EasyMock.expect(unwrappedSnapshotProvider.getBucketName(spaceId))
                 .andReturn(bucketName);
+        EasyMock.expect(unwrappedSnapshotProvider.getStorageProviderType())
+                .andReturn(StorageProviderType.AMAZON_S3);
         s3Client.deleteBucketLifecycleConfiguration(EasyMock.eq(bucketName));
         EasyMock.expectLastCall().once();
 

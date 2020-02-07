@@ -93,6 +93,8 @@ public class CleanupSnapshotTaskRunnerTest extends EasyMockSupport {
 
         expect(unwrappedSnapshotProvider.getBucketName(spaceId))
             .andReturn(bucketName);
+        expect(unwrappedSnapshotProvider.getStorageProviderType())
+            .andReturn(StorageProviderType.AMAZON_S3);
         Capture<BucketLifecycleConfiguration> lifecycleConfigCapture =
             new Capture<>();
         s3Client.setBucketLifecycleConfiguration(eq(bucketName),

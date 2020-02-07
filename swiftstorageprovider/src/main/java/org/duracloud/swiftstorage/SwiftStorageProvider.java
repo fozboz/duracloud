@@ -139,7 +139,6 @@ public class SwiftStorageProvider extends S3StorageProvider {
 
         // Will throw if bucket does not exist
         String propsBucketName = getBucketName(PROPERTIES_BUCKET);
-        log.info("PropsBucketName {}", propsBucketName);
 
         Map<String, String> spaceProperties = new HashMap<>();
         String spacePropertiesString;
@@ -150,7 +149,6 @@ public class SwiftStorageProvider extends S3StorageProvider {
                 spacePropertiesString.substring(1, spacePropertiesString.length() - 1);
             String[] spacePropertiesList = spacePropertiesString.split(", ");
             for (String property : spacePropertiesList) {
-                log.info("Property {}", property);
                 String[] props = property.split("=");
                 spaceProperties.put(props[0], props[1]);
             }
@@ -191,7 +189,6 @@ public class SwiftStorageProvider extends S3StorageProvider {
         // By calling this _after_ we have requested the space properties,
         // we ensure that the metadata bucket exists.
         String metadataBucketName = getBucketName(PROPERTIES_BUCKET);
-        log.info("METADATA BUCKETNAME {} ", metadataBucketName);
 
         // Set creation date
         String creationDate = originalProperties.get(PROPERTIES_SPACE_CREATED);

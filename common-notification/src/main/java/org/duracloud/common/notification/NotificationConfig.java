@@ -32,6 +32,12 @@ public class NotificationConfig {
     /* For administrative notifications (list of addresses for email) */
     private List<String> admins;
 
+    private String notificationType;
+
+    private String notificationHost;
+
+    private String notificationPort;
+
     public String getType() {
         return type;
     }
@@ -70,6 +76,30 @@ public class NotificationConfig {
 
     public void setAdmins(List<String> admins) {
         this.admins = admins;
+    }
+
+    public String getNotificationType() {
+        return notificationType;
+    }
+
+    public void setNotificationType(String notificationType) {
+        this.notificationType = notificationType;
+    }
+
+    public String getNotificationHost() {
+        return notificationHost;
+    }
+
+    public void setNotificationHost(String notificationHost) {
+        this.notificationHost = notificationHost;
+    }
+
+    public String getNotificationPort() {
+        return notificationPort;
+    }
+
+    public void setNotificationPort(String notificationPort) {
+        this.notificationPort = notificationPort;
     }
 
 }

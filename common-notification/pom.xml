@@ -27,6 +27,12 @@
       <artifactId>notification-amazon</artifactId>
       <version>${project.version}</version>
     </dependency>
+    
+     <dependency>
+      <groupId>org.duracloud</groupId>
+      <artifactId>notification-spring</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
   </dependencies>
 
