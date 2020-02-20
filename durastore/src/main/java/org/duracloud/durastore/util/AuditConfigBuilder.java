@@ -26,7 +26,6 @@ public class AuditConfigBuilder {
         DuracloudMill mill = millRepo.findAll().get(0);
         config.setAuditLogSpaceId(mill.getAuditLogSpaceId());
         config.setAuditQueueName(mill.getAuditQueue());
-        config.setS3Type(mill.getS3Type());
         config.setAuditQueueType(mill.getAuditQueueType());
         config.setRabbitmqHost(mill.getRabbitmqHost());
         config.setRabbitmqPort(mill.getRabbitmqPort());
@@ -34,10 +33,6 @@ public class AuditConfigBuilder {
         config.setRabbitmqExchange(mill.getRabbitmqExchange());
         config.setRabbitmqUsername(mill.getRabbitmqUsername());
         config.setRabbitmqPassword(mill.getRabbitmqPassword());
-        config.setAwsAccessKey(mill.getAwsAccessKey());
-        config.setAwsSecretKey(mill.getAwsSecretKey());
-        config.setSwiftEndpoint(mill.getSwiftEndpoint());
-        config.setSwiftSignerType(mill.getSwiftSignerType());
         return config;
     }
 

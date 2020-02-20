@@ -115,7 +115,6 @@ public class SQSTaskQueueTest extends EasyMockSupport {
         Assert.assertTrue(msgBody.contains("key1=value1"));
         Assert.assertTrue(msgBody.contains("key2=value2"));
         Assert.assertTrue(msgBody.contains("key3=value3"));
-
     }
 
     @Test
