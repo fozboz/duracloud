@@ -349,11 +349,13 @@ public class SwiftStorageProvider extends S3StorageProvider {
      * @param contentId
      * @param seconds
      */
-    public void expireObject(String bucketName, String contentId, Integer seconds) {
-        log.info("Set X-Delete-After. Bucket {} ContentId {} Seconds {}", bucketName, contentId, seconds);
+    public ObjectMetadata expireObject(String bucketName, String contentId, Integer seconds) {
+        log.debug("Expiring object {} in {} after {} seconds.", contentId, bucketName, seconds);
         ObjectMetadata objMetadata = getObjectDetails(bucketName, contentId, true);
         objMetadata.setHeader("X-Delete-After", seconds);
         updateObjectProperties(bucketName, contentId, objMetadata);
+
+        return objMetadata;
     }
 
     private ObjectMetadata getObjectDetails(String bucketName, String contentId, boolean retry) {
