@@ -126,7 +126,7 @@ public class AuditLogReaderImpl implements AuditLogReader {
     }
 
     protected StorageProvider getStorageProvider() {
-        if (auditConfig.getS3Type().equalsIgnoreCase("SWIFT")) {
+        if (duracloudConfigBean.getSwiftEndpoint() != null) {
             Map<String, String> map = new HashMap<String, String>();
             map.put(OPTS.SWIFT_S3_ENDPOINT.name(), auditConfig.getSwiftEndpoint());
             map.put(OPTS.SWIFT_S3_SIGNER_TYPE.name(), auditConfig.getSwiftSignerType());
